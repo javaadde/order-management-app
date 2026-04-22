@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "the-black-tea",
-    "slug": "the-black-tea",
+    "name": "CafeFlow",
+    "slug": "cafeflow-order-management",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
