@@ -9,15 +9,17 @@ interface CafeFlowStore {
   currentTableNumber: number | null;
   allOrders: Order[];
   tempCartItems: OrderItem[];
+  theme: 'light' | 'dark';
 
   // Servant actions
-  setRole: (role: UserRole) => void;
+  setRole: (role: UserRole | null) => void;
   selectTable: (tableNumber: number) => void;
   addItemToCart: (menuItemId: string, variantId: string, quantity: number) => void;
   removeItemFromCart: (cartItemId: string) => void;
   updateCartItemQuantity: (cartItemId: string, quantity: number) => void;
   submitOrder: () => Order | null;
   clearCart: () => void;
+  setTheme: (theme: 'light' | 'dark') => void;
 
   // Chef actions
   updateItemStatus: (orderId: string, itemId: string, status: ItemStatus) => void;
@@ -46,9 +48,10 @@ export const useCafeFlowStore = create<CafeFlowStore>((set, get) => ({
   currentTableNumber: null,
   allOrders: [],
   tempCartItems: [],
+  theme: 'light',
 
   // Servant action: Set user role
-  setRole: (role: UserRole) => {
+  setRole: (role: UserRole | null) => {
     set({ currentRole: role });
     if (role !== 'servant') {
       set({ currentTableNumber: null });
@@ -136,6 +139,11 @@ export const useCafeFlowStore = create<CafeFlowStore>((set, get) => ({
     return newOrder;
   },
 
+  // Theme action
+  setTheme: (theme: 'light' | 'dark') => {
+    set({ theme });
+  },
+
   // Servant action: Clear cart
   clearCart: () => {
     set({ tempCartItems: [] });
@@ -184,7 +192,7 @@ export const useCafeFlowStore = create<CafeFlowStore>((set, get) => ({
   getOrdersForChef: (chefRole: ChefRole) => {
     const state = get();
     return state.allOrders.filter((order) =>
-      order.items.some((item) => item.assignedChef === chefRole && item.status !== 'ready')
+      order.items.some((item) => item.assignedChef === chefRole)
     );
   },
 

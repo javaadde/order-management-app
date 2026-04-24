@@ -35,7 +35,7 @@ export const getStatusColor = (status: string): string => {
   const colors: { [key: string]: string } = {
     pending: '#888888',
     preparing: '#FF9500',
-    ready: '#34C759',
+    ready: '#C5A47E', // Gold
     partially_ready: '#FF9500',
     served: '#5AC8FA',
   };

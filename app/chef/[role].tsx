@@ -4,17 +4,21 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
   RefreshControl,
 } from 'react-native';
+
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Button, Card, Badge, SectionHeader, OrderItemCard } from '../../src/components/UIComponents';
+import { Platform } from 'react-native';
+
 import { useCafeFlowStore } from '../../src/store/cafeFlow';
-import { CHEF_INFO, getItemsForChef } from '../../src/constants/menu';
+import { OrderItemCard } from '../../src/components/UIComponents';
+import { CHEF_INFO, MENU_ITEMS } from '../../src/constants/menu';
 import { ChefRole, ItemStatus } from '../../src/types';
 import { formatTime } from '../../src/utils/helpers';
+import { COLORS } from '../../src/constants/theme';
 
 /**
  * Chef Panel - Dynamic route for each chef (chef_a, chef_b, chef_c)
@@ -26,10 +30,11 @@ export default function ChefPanel() {
   const {
     updateItemStatus,
     getOrdersForChef,
-    getAllPendingOrders,
     setRole,
-    currentRole,
+    theme,
   } = useCafeFlowStore();
+
+  const t = COLORS[theme];
   const [activeTab, setActiveTab] = React.useState<'pending' | 'preparing' | 'ready'>('pending');
   const [refreshing, setRefreshing] = React.useState(false);
 
@@ -47,6 +52,9 @@ export default function ChefPanel() {
       .map((order) => ({
         ...order,
         items: order.items.filter((item) => {
+          const isAssigned = item.assignedChef === chefRole;
+          if (!isAssigned) return false;
+          
           if (activeTab === 'pending') return item.status === 'pending';
           if (activeTab === 'preparing') return item.status === 'preparing';
           if (activeTab === 'ready') return item.status === 'ready';
@@ -69,10 +77,11 @@ export default function ChefPanel() {
   }, []);
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', onPress: () => {} },
+    Alert.alert('Logout', 'Are you sure you want to logout from the kitchen?', [
+      { text: 'Cancel', style: 'cancel' },
       {
         text: 'Logout',
+        style: 'destructive',
         onPress: () => {
           setRole(null);
           router.push('/');
@@ -82,212 +91,175 @@ export default function ChefPanel() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: t.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: t.card, borderBottomColor: t.border }]}>
         <View>
-          <Text style={styles.headerTitle}>{chefInfo.name}</Text>
-          <Text style={styles.headerSubtitle}>{chefInfo.specialty}</Text>
+          <Text style={[styles.headerTitle, { color: t.accent }]}>{chefInfo.name}</Text>
+          <View style={[styles.specialtyBadge, { backgroundColor: theme === 'dark' ? 'rgba(197, 164, 126, 0.1)' : '#ECFDF5' }]}>
+            <Text style={[styles.specialtyText, { color: theme === 'dark' ? t.accent : '#059669' }]}>{chefInfo.specialty}</Text>
+          </View>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-          <Text style={styles.logoutText}>Logout</Text>
+          <Text style={styles.logoutText}>Exit Kitchen</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Tab Navigation */}
-      <View style={styles.tabNavigation}>
-        <TouchableOpacity
-          onPress={() => setActiveTab('pending')}
-          style={[styles.tab, activeTab === 'pending' && styles.activeTab]}
-        >
-          <Text style={[styles.tabText, activeTab === 'pending' && styles.activeTabText]}>
-            Pending
-          </Text>
-          {ordersForChef.some((o) => o.items.some((i) => i.status === 'pending')) && (
-            <Badge
-              label={ordersForChef
-                .flatMap((o) => o.items)
-                .filter((i) => i.status === 'pending').length.toString()}
-              color="#FF3B30"
-            />
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => setActiveTab('preparing')}
-          style={[styles.tab, activeTab === 'preparing' && styles.activeTab]}
-        >
-          <Text style={[styles.tabText, activeTab === 'preparing' && styles.activeTabText]}>
-            Preparing
-          </Text>
-          {ordersForChef.some((o) => o.items.some((i) => i.status === 'preparing')) && (
-            <Badge
-              label={ordersForChef
-                .flatMap((o) => o.items)
-                .filter((i) => i.status === 'preparing').length.toString()}
-              color="#FF9500"
-            />
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => setActiveTab('ready')}
-          style={[styles.tab, activeTab === 'ready' && styles.activeTab]}
-        >
-          <Text style={[styles.tabText, activeTab === 'ready' && styles.activeTabText]}>Ready</Text>
-          {ordersForChef.some((o) => o.items.some((i) => i.status === 'ready')) && (
-            <Badge
-              label={ordersForChef
-                .flatMap((o) => o.items)
-                .filter((i) => i.status === 'ready').length.toString()}
-              color="#34C759"
-            />
-          )}
-        </TouchableOpacity>
+      {/* Modern Kitchen Tabs */}
+      <View style={[styles.tabWrapper, { backgroundColor: t.card }]}>
+        <View style={[styles.tabNavigation, { backgroundColor: t.surface }]}>
+          {(['pending', 'preparing', 'ready'] as const).map((tab) => {
+            const isActive = activeTab === tab;
+            const count = ordersForChef.flatMap(o => o.items).filter(i => i.status === tab).length;
+            const tabColor = tab === 'pending' ? '#EF4444' : tab === 'preparing' ? '#F59E0B' : t.accent;
+            
+            return (
+              <TouchableOpacity
+                key={tab}
+                onPress={() => setActiveTab(tab)}
+                style={[styles.tab, isActive && [styles.activeTab, { backgroundColor: theme === 'dark' ? t.accent : '#FFF' }]]}
+              >
+                <Text style={[styles.tabText, isActive && { color: theme === 'dark' ? '#121212' : t.text }, !isActive && { color: t.muted }]}>
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </Text>
+                {count > 0 && (
+                  <View style={[styles.tabBadge, { backgroundColor: isActive ? (theme === 'dark' ? '#121212' : tabColor) : t.border }]}>
+                    <Text style={[styles.tabBadgeText, { color: isActive ? (theme === 'dark' ? t.accent : '#FFF') : t.muted }]}>{count}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
-      {/* Content */}
+      {/* Kitchen Content */}
       <ScrollView
         style={styles.content}
+        contentContainerStyle={{ paddingBottom: 120 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
         {filteredOrders.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateEmoji}>✓</Text>
+            <View style={styles.emptyIconContainer}>
+               <Text style={styles.emptyEmoji}>👨‍🍳</Text>
+            </View>
             <Text style={styles.emptyStateText}>
               {activeTab === 'pending'
-                ? 'No pending orders'
+                ? 'All Caught Up!'
                 : activeTab === 'preparing'
-                  ? 'No items being prepared'
-                  : 'No ready orders'}
+                  ? 'No Active Prep'
+                  : 'Ready Station Empty'}
             </Text>
             <Text style={styles.emptyStateHint}>
-              New orders will appear here automatically
+              New kitchen tickets will appear here automatically
             </Text>
           </View>
         ) : (
           filteredOrders.map((order) => (
-            <View key={order.id} style={styles.orderGroup}>
-              {/* Order Header */}
-              <Card
-                style={[
-                  styles.orderHeader,
-                  {
-                    backgroundColor:
-                      activeTab === 'ready'
-                        ? '#E8F5E9'
-                        : activeTab === 'preparing'
-                          ? '#FFF3E0'
-                          : '#F5F5F5',
-                  },
-                ]}
-              >
-                <View style={styles.orderHeaderContent}>
-                  <View>
-                    <Text style={styles.tableNumber}>Table {order.tableNumber}</Text>
-                    <Text style={styles.orderTime}>{formatTime(order.createdAt)}</Text>
-                  </View>
-                  <View style={styles.itemCount}>
-                    <Text style={styles.itemCountText}>{order.items.length} items</Text>
-                  </View>
+            <View key={order.id} style={[styles.orderGroup, { backgroundColor: t.card, borderColor: t.border }]}>
+              {/* Modern Ticket Header */}
+              <View style={[styles.ticketHeader, { backgroundColor: t.surface, borderBottomColor: t.border }]}>
+                <View style={[styles.tableIndicator, { backgroundColor: activeTab === 'pending' ? '#EF4444' : activeTab === 'preparing' ? '#F59E0B' : t.accent }]}>
+                  <Text style={[styles.tableIndicatorText, { color: (activeTab === 'ready' && theme === 'dark') ? '#121212' : '#FFF' }]}>{order.tableNumber}</Text>
                 </View>
-              </Card>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={[styles.ticketTitle, { color: t.text }]}>Ticket #{order.id.slice(-4).toUpperCase()}</Text>
+                  <Text style={[styles.ticketTime, { color: t.muted }]}>Received: {formatTime(order.createdAt)}</Text>
+                </View>
+                <View style={[styles.ticketBadge, { backgroundColor: t.border }]}>
+                  <Text style={[styles.ticketBadgeText, { color: t.text }]}>{order.items.length} items</Text>
+                </View>
+              </View>
 
-              {/* Items */}
-              {order.items.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  onPress={() => {
-                    const nextStatus: ItemStatus =
-                      item.status === 'pending'
-                        ? 'preparing'
-                        : item.status === 'preparing'
-                          ? 'ready'
-                          : 'ready';
-
-                    handleStatusChange(order.id, item.id, nextStatus);
-                  }}
-                  activeOpacity={activeTab !== 'ready' ? 0.7 : 1}
-                  style={styles.itemTouchable}
-                >
-                  <OrderItemCard
+              {/* Items List */}
+              <View style={styles.itemsList}>
+                {order.items.map((item) => (
+                  <TouchableOpacity
                     key={item.id}
-                    itemName={item.menuItemName}
-                    variantName={item.variantName}
-                    quantity={item.quantity}
-                    price={item.totalPrice}
-                    status={item.status}
-                    backgroundColor={
-                      item.status === 'ready'
-                        ? '#E8F5E9'
-                        : item.status === 'preparing'
-                          ? '#FFF3E0'
-                          : '#F0F0F0'
-                    }
-                  />
-                </TouchableOpacity>
-              ))}
+                    onPress={() => {
+                      const nextStatus: ItemStatus =
+                        item.status === 'pending'
+                          ? 'preparing'
+                          : item.status === 'preparing'
+                            ? 'ready'
+                            : 'ready';
 
-              {/* Mark as Preparing / Done Button */}
-              {activeTab === 'pending' && (
-                <Button
-                  title="Start Preparing"
-                  onPress={() => {
-                    order.items.forEach((item) => {
-                      handleStatusChange(order.id, item.id, 'preparing');
-                    });
-                  }}
-                  variant="primary"
-                  size="medium"
-                  style={styles.actionButton}
-                />
-              )}
+                      handleStatusChange(order.id, item.id, nextStatus);
+                    }}
+                    activeOpacity={activeTab !== 'ready' ? 0.7 : 1}
+                    style={styles.itemWrapper}
+                  >
+                    <OrderItemCard
+                      itemName={item.menuItemName}
+                      variantName={item.variantName}
+                      quantity={item.quantity}
+                      price={item.totalPrice}
+                      status={item.status}
+                      image={MENU_ITEMS.find(m => m.id === item.menuItemId)?.image}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-              {activeTab === 'preparing' && (
-                <Button
-                  title="Mark All Ready"
-                  onPress={() => {
-                    order.items.forEach((item) => {
-                      handleStatusChange(order.id, item.id, 'ready');
-                    });
-                  }}
-                  variant="success"
-                  size="medium"
-                  style={styles.actionButton}
-                />
-              )}
+              {/* Action Bar for Ticket */}
+              <View style={styles.ticketFooter}>
+                {activeTab === 'pending' && (
+                  <TouchableOpacity 
+                    style={styles.actionBtnPrimary}
+                    onPress={() => {
+                      order.items.forEach((item) => {
+                        handleStatusChange(order.id, item.id, 'preparing');
+                      });
+                    }}
+                  >
+                    <Text style={styles.actionBtnText}>Accept All Items</Text>
+                  </TouchableOpacity>
+                )}
+
+                {activeTab === 'preparing' && (
+                  <TouchableOpacity 
+                    style={styles.actionBtnSuccess}
+                    onPress={() => {
+                      order.items.forEach((item) => {
+                        handleStatusChange(order.id, item.id, 'ready');
+                      });
+                    }}
+                  >
+                    <Text style={styles.actionBtnText}>Mark All as Ready</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           ))
         )}
-
-        <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      {/* Quick Stats Bar */}
-      {ordersForChef.length > 0 && (
-        <View style={styles.statsBar}>
+      {/* Floating Kitchen Stats */}
+      <View style={styles.statsBarWrapper}>
+         <View style={[styles.statsBar, { backgroundColor: t.accent }]}>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
+            <Text style={[styles.statNumber, { color: '#121212' }]}>
               {ordersForChef.flatMap((o) => o.items).filter((i) => i.status === 'pending').length}
             </Text>
-            <Text style={styles.statLabel}>Pending</Text>
+            <Text style={[styles.statLabel, { color: 'rgba(18, 18, 18, 0.6)' }]}>Pending</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: 'rgba(18, 18, 18, 0.1)' }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
+            <Text style={[styles.statNumber, { color: '#121212' }]}>
               {ordersForChef.flatMap((o) => o.items).filter((i) => i.status === 'preparing').length}
             </Text>
-            <Text style={styles.statLabel}>Preparing</Text>
+            <Text style={[styles.statLabel, { color: 'rgba(18, 18, 18, 0.6)' }]}>Active</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: 'rgba(18, 18, 18, 0.1)' }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
+            <Text style={[styles.statNumber, { color: '#121212' }]}>
               {ordersForChef.flatMap((o) => o.items).filter((i) => i.status === 'ready').length}
             </Text>
-            <Text style={styles.statLabel}>Ready</Text>
+            <Text style={[styles.statLabel, { color: 'rgba(18, 18, 18, 0.6)' }]}>Ready</Text>
           </View>
         </View>
-      )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -295,166 +267,257 @@ export default function ChefPanel() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#121212',
   },
   header: {
-    backgroundColor: '#FFF',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: '#1C1C1C',
+    paddingHorizontal: 24,
+    paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderBottomColor: '#2C2C2C',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000',
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 2,
-  },
-  logoutBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: '#FF3B30',
-    borderRadius: 6,
-  },
-  logoutText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#C5A47E',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    letterSpacing: -1,
   },
 
+  specialtyBadge: {
+    backgroundColor: 'rgba(197, 164, 126, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  specialtyText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#C5A47E',
+    textTransform: 'uppercase',
+  },
+  logoutBtn: {
+    backgroundColor: '#FFF1F2',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  logoutText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#E11D48',
+  },
+  tabWrapper: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    backgroundColor: '#1C1C1C',
+  },
   tabNavigation: {
     flexDirection: 'row',
-    backgroundColor: '#FFF',
-    borderBottomWidth: 2,
-    borderBottomColor: '#E5E5E5',
+    backgroundColor: '#2C2C2C',
+    borderRadius: 30,
+    padding: 6,
   },
   tab: {
     flex: 1,
+    flexDirection: 'row',
     paddingVertical: 12,
-    paddingHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    borderBottomWidth: 3,
-    borderBottomColor: 'transparent',
+    borderRadius: 25,
   },
   activeTab: {
-    borderBottomColor: '#007AFF',
+    backgroundColor: '#C5A47E',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
   },
   tabText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#888',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#A8A29E',
   },
   activeTabText: {
-    color: '#007AFF',
+    color: '#121212',
   },
-
+  tabBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginLeft: 6,
+  },
+  tabBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+  },
   content: {
     flex: 1,
-    paddingVertical: 8,
   },
-
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
+    paddingVertical: 100,
+    paddingHorizontal: 40,
   },
-  emptyStateEmoji: {
-    fontSize: 48,
-    marginBottom: 12,
+  emptyIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  emptyEmoji: {
+    fontSize: 50,
   },
   emptyStateText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#888',
-    marginBottom: 4,
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#111827',
+    textAlign: 'center',
   },
   emptyStateHint: {
-    fontSize: 12,
-    color: '#999',
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 8,
+    fontWeight: '500',
   },
-
   orderGroup: {
-    marginBottom: 16,
+    backgroundColor: '#1C1C1C',
+    marginHorizontal: 16,
+    marginBottom: 24,
+    borderRadius: 30,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#2C2C2C',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 5,
   },
-  orderHeader: {
-    marginHorizontal: 8,
-    marginBottom: 8,
-  },
-  orderHeaderContent: {
+  ticketHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#262626',
+    borderBottomWidth: 1,
+    borderBottomColor: '#2C2C2C',
   },
-  tableNumber: {
+  tableIndicator: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tableIndicatorText: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#FFF',
+  },
+  ticketTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#000',
+    fontWeight: '800',
+    color: '#F5F5F5',
   },
-  orderTime: {
-    fontSize: 11,
-    color: '#888',
+  ticketTime: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '600',
     marginTop: 2,
   },
-  itemCount: {
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  ticketBadge: {
+    backgroundColor: '#F3F4F6',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: 15,
   },
-  itemCountText: {
+  ticketBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#000',
+    fontWeight: '700',
+    color: '#4B5563',
   },
-
-  itemTouchable: {
-    marginHorizontal: 8,
-    marginBottom: 4,
+  itemsList: {
+    paddingVertical: 10,
   },
-
-  actionButton: {
-    marginHorizontal: 12,
-    marginVertical: 8,
+  itemWrapper: {
+    marginVertical: -8, // Tighter stacking of cards
   },
-
-  bottomSpacing: {
-    height: 80,
+  ticketFooter: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
-
+  actionBtnPrimary: {
+    backgroundColor: '#059669',
+    height: 55,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionBtnSuccess: {
+    backgroundColor: '#10B981',
+    height: 55,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionBtnText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  statsBarWrapper: {
+    position: 'absolute',
+    bottom: 30,
+    left: 24,
+    right: 24,
+  },
   statsBar: {
     flexDirection: 'row',
-    backgroundColor: '#FFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: '#C5A47E',
+    borderRadius: 35,
+    paddingHorizontal: 24,
+    paddingVertical: 18,
     justifyContent: 'space-around',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
   },
   statItem: {
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000',
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#121212',
   },
   statLabel: {
-    fontSize: 11,
-    color: '#888',
-    marginTop: 4,
-    fontWeight: '500',
+    fontSize: 10,
+    color: 'rgba(18, 18, 18, 0.7)',
+    marginTop: 2,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#E5E5E5',
-    marginHorizontal: 16,
+    backgroundColor: 'rgba(18, 18, 18, 0.2)',
+    marginHorizontal: 10,
+  },
+  bottomSpacing: {
+    height: 120,
   },
 });
+

@@ -1,12 +1,15 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Platform, 
   ViewStyle,
-  TextStyle,
+  Image,
 } from 'react-native';
+import { useCafeFlowStore } from '../store/cafeFlow';
+import { COLORS } from '../constants/theme';
 
 interface ButtonProps {
   title: string;
@@ -29,11 +32,14 @@ export const Button: React.FC<ButtonProps> = ({
   disabled = false,
   style,
 }) => {
+  const { theme } = useCafeFlowStore();
+  const t = COLORS[theme];
+
   const variantStyles = {
-    primary: styles.primaryBtn,
-    secondary: styles.secondaryBtn,
+    primary: [styles.primaryBtn, { backgroundColor: t.accent }],
+    secondary: [styles.secondaryBtn, { backgroundColor: t.card, borderColor: t.border }],
     danger: styles.dangerBtn,
-    success: styles.successBtn,
+    success: [styles.successBtn, { backgroundColor: t.accent }],
   };
 
   const sizeStyles = {
@@ -61,7 +67,9 @@ export const Button: React.FC<ButtonProps> = ({
         style,
       ]}
     >
-      <Text style={[styles.btnText, textSizeStyles[size]]}>{title}</Text>
+      <Text style={[styles.btnText, textSizeStyles[size], { color: variant === 'secondary' ? t.text : '#121212' }]}>
+        {title}
+      </Text>
     </TouchableOpacity>
   );
 };
@@ -75,12 +83,21 @@ interface CardProps {
 /**
  * Card Component for displaying content
  */
+// Card component
 export const Card: React.FC<CardProps> = ({ children, style, onPress }) => {
+  const { theme } = useCafeFlowStore();
+  const t = COLORS[theme];
+
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
-      style={[styles.card, onPress && { marginHorizontal: 8 }, style]}
+      style={[
+        styles.card, 
+        { backgroundColor: t.card, borderColor: t.border },
+        onPress && { marginHorizontal: 8 }, 
+        style
+      ]}
     >
       {children}
     </TouchableOpacity>
@@ -113,10 +130,13 @@ interface SectionHeaderProps {
  * Section Header Component
  */
 export const SectionHeader: React.FC<SectionHeaderProps> = ({ title, subtitle }) => {
+  const { theme } = useCafeFlowStore();
+  const t = COLORS[theme];
+
   return (
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {subtitle && <Text style={styles.sectionSubtitle}>{subtitle}</Text>}
+      <Text style={[styles.sectionTitle, { color: t.accent }]}>{title}</Text>
+      {subtitle && <Text style={[styles.sectionSubtitle, { color: t.muted }]}>{subtitle}</Text>}
     </View>
   );
 };
@@ -137,17 +157,20 @@ export const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   onDecrease,
   onRemove,
 }) => {
+  const { theme } = useCafeFlowStore();
+  const t = COLORS[theme];
+
   return (
-    <View style={styles.quantityContainer}>
-      <TouchableOpacity onPress={onDecrease} style={styles.qtyBtn}>
-        <Text style={styles.qtyBtnText}>−</Text>
+    <View style={[styles.quantityContainer, { backgroundColor: t.surface, borderColor: t.border }]}>
+      <TouchableOpacity onPress={onDecrease} style={[styles.qtyBtn, { backgroundColor: t.card }]}>
+        <Text style={[styles.qtyBtnText, { color: t.accent }]}>−</Text>
       </TouchableOpacity>
-      <Text style={styles.qtyText}>{quantity}</Text>
-      <TouchableOpacity onPress={onIncrease} style={styles.qtyBtn}>
-        <Text style={styles.qtyBtnText}>+</Text>
+      <Text style={[styles.qtyText, { color: t.text }]}>{quantity}</Text>
+      <TouchableOpacity onPress={onIncrease} style={[styles.qtyBtn, { backgroundColor: t.card }]}>
+        <Text style={[styles.qtyBtnText, { color: t.accent }]}>+</Text>
       </TouchableOpacity>
       {onRemove && (
-        <TouchableOpacity onPress={onRemove} style={[styles.qtyBtn, styles.removeBtn]}>
+        <TouchableOpacity onPress={onRemove} style={[styles.qtyBtn, styles.removeBtn, { backgroundColor: theme === 'dark' ? '#450a0a' : '#FEF2F2' }]}>
           <Text style={[styles.qtyBtnText, { color: '#FF3B30' }]}>✕</Text>
         </TouchableOpacity>
       )}
@@ -161,6 +184,7 @@ interface OrderItemCardProps {
   quantity: number;
   price: number;
   status: string;
+  image?: any;
   onStatusChange?: () => void;
   backgroundColor?: string;
 }
@@ -174,32 +198,41 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
   quantity,
   price,
   status,
+  image,
   onStatusChange,
-  backgroundColor = '#F5F5F5',
+  backgroundColor,
 }) => {
+  const { theme } = useCafeFlowStore();
+  const t = COLORS[theme];
+
   const statusColor =
     {
       pending: '#888888',
       preparing: '#FF9500',
-      ready: '#34C759',
+      ready: t.accent,
     }[status] || '#888888';
 
   return (
     <TouchableOpacity
       onPress={onStatusChange}
       activeOpacity={onStatusChange ? 0.7 : 1}
-      style={[styles.orderItemCard, { backgroundColor }]}
+      style={[styles.orderItemCard, { backgroundColor: backgroundColor || t.card, borderColor: t.border, borderWidth: 1 }]}
     >
       <View style={styles.orderItemContent}>
+        {image && (
+          <View style={styles.orderItemImageContainer}>
+            <Image source={image} style={styles.orderItemImage} resizeMode="cover" />
+          </View>
+        )}
         <View style={styles.orderItemLeft}>
-          <Text style={styles.orderItemName}>{itemName}</Text>
-          <Text style={styles.orderItemVariant}>{variantName}</Text>
-          <Text style={styles.orderItemQty}>Qty: {quantity}</Text>
+          <Text style={[styles.orderItemName, { color: t.text }]}>{itemName}</Text>
+          <Text style={[styles.orderItemVariant, { color: t.muted }]}>{variantName}</Text>
+          <Text style={[styles.orderItemQty, { color: t.accent }]}>Qty: {quantity}</Text>
         </View>
         <View style={styles.orderItemRight}>
-          <Text style={styles.orderItemPrice}>₹{price}</Text>
+          <Text style={[styles.orderItemPrice, { color: t.accent }]}>₹{price}</Text>
           <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
-            <Text style={styles.statusText}>{status}</Text>
+            <Text style={[styles.statusText, { color: status === 'ready' ? '#121212' : '#FFF' }]}>{status}</Text>
           </View>
         </View>
       </View>
@@ -211,43 +244,54 @@ const styles = StyleSheet.create({
   btn: {
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 24, // More rounded for modern look
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
   },
   primaryBtn: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#C5A47E', // Gold
   },
   secondaryBtn: {
-    backgroundColor: '#E5E5EA',
+    backgroundColor: '#1C1C1C', // Dark Gray
+    borderWidth: 1,
+    borderColor: '#C5A47E',
   },
   dangerBtn: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#DC2626', // Red 600
   },
   successBtn: {
-    backgroundColor: '#34C759',
+    backgroundColor: '#C5A47E', // Gold
   },
   smallBtn: {
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
+    borderRadius: 18,
   },
   mediumBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 28,
   },
   largeBtn: {
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    borderRadius: 35,
   },
   btnText: {
-    fontWeight: '600',
-    color: '#FFF',
+    fontWeight: '700',
+    color: '#121212', // Dark text on gold buttons
+    letterSpacing: 0.5,
   },
   smallText: {
     fontSize: 12,
   },
   mediumText: {
-    fontSize: 14,
+    fontSize: 15,
   },
   largeText: {
     fontSize: 18,
@@ -257,82 +301,120 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
+    backgroundColor: '#1C1C1C',
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#2C2C2C',
   },
 
   badge: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 14,
     alignSelf: 'flex-start',
   },
   badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 
   sectionHeader: {
-    marginVertical: 16,
+    marginVertical: 24,
     marginHorizontal: 16,
   },
   sectionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#000',
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#C5A47E',
     marginBottom: 4,
+    letterSpacing: -1,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '#6B7280',
+    fontWeight: '500',
+    letterSpacing: 0.5,
   },
+
 
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    paddingHorizontal: 8,
+    backgroundColor: '#2C2C2C',
+    borderRadius: 20,
+    paddingHorizontal: 6,
     paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#3C3C3C',
   },
   qtyBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   qtyBtnText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#007AFF',
+    fontWeight: '700',
+    color: '#C5A47E',
   },
   qtyText: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginHorizontal: 8,
+    fontSize: 16,
+    fontWeight: '800',
+    marginHorizontal: 12,
     minWidth: 24,
     textAlign: 'center',
+    color: '#F5F5F5',
   },
   removeBtn: {
     marginLeft: 8,
-    borderLeftWidth: 1,
-    borderLeftColor: '#DDD',
+    backgroundColor: '#FEF2F2',
   },
 
   orderItemCard: {
     marginVertical: 8,
-    marginHorizontal: 8,
-    padding: 12,
-    borderRadius: 8,
+    marginHorizontal: 16,
+    padding: 16,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 2,
   },
   orderItemContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  orderItemImageContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    marginRight: 15,
+    overflow: 'hidden',
+    backgroundColor: '#333',
+  },
+  orderItemImage: {
+    width: '100%',
+    height: '100%',
   },
   orderItemLeft: {
     flex: 1,
@@ -341,35 +423,40 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   orderItemName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#000',
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#F5F5F5',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
   },
+
   orderItemVariant: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 13,
+    color: '#6B7280',
     marginTop: 2,
+    fontWeight: '500',
   },
   orderItemQty: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 4,
+    fontSize: 13,
+    color: '#C5A47E',
+    marginTop: 6,
+    fontWeight: '700',
   },
   orderItemPrice: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#000',
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#C5A47E',
   },
   statusBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    marginTop: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    marginTop: 8,
   },
   statusText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '800',
     color: '#FFF',
-    textTransform: 'capitalize',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

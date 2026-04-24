@@ -1,5 +1,5 @@
 /** User roles in the CafeFlow system */
-export type UserRole = 'servant' | 'chef_a' | 'chef_b' | 'chef_c';
+export type UserRole = 'servant' | 'chef_a' | 'chef_b' | 'chef_c' | 'admin';
 
 /** Chef specializations */
 export type ChefRole = 'chef_a' | 'chef_b' | 'chef_c';
@@ -24,6 +24,7 @@ export interface MenuItem {
   variants: ItemVariant[];
   basePrice: number;
   chef: ChefRole; // Which chef prepares this
+  image?: any; // Image source (require/uri)
 }
 
 /**
