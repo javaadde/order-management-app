@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Black Tea - POS System</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#16130f",
+                        "on-secondary": "#31312c",
+                        "secondary-fixed-dim": "#c9c6c0",
+                        "error": "#ffb4ab",
+                        "on-primary-container": "#4d350f",
+                        "surface-container": "#221f1b",
+                        "error-container": "#93000a",
+                        "tertiary": "#b4c8e8",
+                        "surface-container-lowest": "#100e0a",
+                        "secondary-container": "#474742",
+                        "surface-container-low": "#1e1b17",
+                        "tertiary-fixed-dim": "#b4c8e8",
+                        "on-tertiary-fixed-variant": "#344863",
+                        "on-surface": "#e9e1db",
+                        "surface-container-high": "#2d2926",
+                        "outline": "#9a8f82",
+                        "on-tertiary-fixed": "#051c35",
+                        "on-primary-fixed": "#291800",
+                        "surface-container-highest": "#383430",
+                        "surface-variant": "#383430",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary-container": "#273b55",
+                        "secondary-fixed": "#e5e2db",
+                        "secondary": "#c9c6c0",
+                        "surface-tint": "#e6c08e",
+                        "primary-fixed": "#ffddb2",
+                        "primary-container": "#c19e6e",
+                        "on-tertiary": "#1d314b",
+                        "tertiary-container": "#91a5c4",
+                        "inverse-on-surface": "#33302c",
+                        "on-secondary-fixed": "#1c1c18",
+                        "on-primary": "#432c06",
+                        "primary": "#e6c08e",
+                        "tertiary-fixed": "#d3e3ff",
+                        "surface-dim": "#16130f",
+                        "outline-variant": "#4e453b",
+                        "surface": "#16130f",
+                        "on-secondary-fixed-variant": "#474742",
+                        "on-primary-fixed-variant": "#5c421a",
+                        "surface-bright": "#3c3834",
+                        "inverse-surface": "#e9e1db",
+                        "on-error": "#690005",
+                        "inverse-primary": "#765930",
+                        "on-background": "#e9e1db",
+                        "on-surface-variant": "#d1c4b6",
+                        "on-secondary-container": "#b7b5af",
+                        "primary-fixed-dim": "#e6c08e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "container-padding": "24px",
+                        "gutter": "16px",
+                        "card-gap": "20px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "display": ["Plus Jakarta Sans"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "h1": ["Plus Jakarta Sans"],
+                        "h2": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "display": ["40px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "h1": ["32px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "h2": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #1E1E1E; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="text-on-background flex flex-col min-h-screen relative pb-24 md:pb-0">
+<!-- TopAppBar -->
+<header class="bg-[#1E1E1E] dark:bg-[#1E1E1E] docked full-width top-0 border-b border-b-[#2A2A2A] flat no shadows flex justify-between items-center w-full px-6 h-16 sticky z-40">
+<div class="flex items-center gap-4">
+<button class="text-[#C19E6E] hover:bg-[#C19E6E]/10 transition-colors scale-95 active:duration-150 p-2 rounded-full focus:outline-none">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-['Plus_Jakarta_Sans'] font-bold tracking-widest uppercase text-lg font-black text-[#C19E6E] tracking-[0.2em]">THE BLACK TEA</h1>
+</div>
+<div>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-[#C19E6E]/30 cursor-pointer hover:bg-[#C19E6E]/10 transition-colors scale-95 active:duration-150">
+<img alt="Staff Profile" class="w-full h-full object-cover" data-alt="professional portrait of cafe staff member with warm lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJlFc1pYQRockd4J6gibDuLU28v5t40881M5k91_zJFAJqx_rIAmNGbJbpoexKSyo5niAElvIESormaiGY0b8J04x6PIb9dyqcBuW_2fpld7yffun6eex6Corr2l3uCdu98oMJinOx9de6biSl2EWALiDF7jkQikbjaYyOAmDChqGnwuLylCS3W7hoNgrv_-iHVW2hAvU2vywUo4bABsBVlST-bC-DK7Cub-t4XhLMkl-LAPg44KjIb-o7UXf7QEkdOdcNEl-8vEE"/>
+</div>
+</div>
+</header>
+<!-- Sub Header: Table Selector & Search -->
+<div class="bg-surface-container-low px-container-padding py-4 border-b border-[#2A2A2A] sticky top-16 z-30">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row gap-4 items-center justify-between">
+<div class="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-hide">
+<button class="px-4 py-2 rounded-full bg-primary-container text-on-primary-container font-label-sm text-label-sm whitespace-nowrap">Table 1</button>
+<button class="px-4 py-2 rounded-full border border-outline-variant text-on-surface-variant font-label-sm text-label-sm whitespace-nowrap hover:border-primary-container hover:text-primary-container transition-colors">Table 2</button>
+<button class="px-4 py-2 rounded-full border border-outline-variant text-on-surface-variant font-label-sm text-label-sm whitespace-nowrap hover:border-primary-container hover:text-primary-container transition-colors">Table 3</button>
+<button class="px-4 py-2 rounded-full border border-outline-variant text-on-surface-variant font-label-sm text-label-sm whitespace-nowrap hover:border-primary-container hover:text-primary-container transition-colors">Table 4</button>
+<button class="px-4 py-2 rounded-full border border-outline-variant text-on-surface-variant font-label-sm text-label-sm whitespace-nowrap hover:border-primary-container hover:text-primary-container transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">add</span> New
+                </button>
+</div>
+<div class="relative w-full md:w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50">search</span>
+<input class="w-full bg-surface-container-highest border border-outline-variant rounded-full py-2 pl-10 pr-4 text-on-surface font-body-md text-body-md focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container placeholder-on-surface-variant/50" placeholder="Search menu..." type="text"/>
+</div>
+</div>
+</div>
+<!-- Main Content Area -->
+<main class="flex-1 max-w-7xl mx-auto w-full flex flex-col md:flex-row p-container-padding gap-8">
+<!-- Sidebar Navigation (Desktop) -->
+<aside class="hidden md:flex w-64 flex-col bg-[#1E1E1E] dark:bg-[#1E1E1E] rounded-r-lg border-r border-[#2A2A2A] flat no shadows h-[calc(100vh-140px)] sticky top-36">
+<div class="flex flex-col p-6 gap-2">
+<!-- Active Nav Item -->
+<button class="flex items-center gap-4 px-4 py-3 bg-[#C19E6E]/10 text-[#C19E6E] border-l-4 border-[#C19E6E] rounded-r-lg transition-colors duration-200 w-full text-left font-['Plus_Jakarta_Sans'] text-sm font-medium">
+<span class="material-symbols-outlined">coffee_maker</span>
+                    Tea Menu
+                </button>
+<!-- Inactive Nav Items -->
+<button class="flex items-center gap-4 px-4 py-3 text-zinc-400 hover:bg-[#252525] border-l-4 border-transparent rounded-r-lg transition-colors duration-200 w-full text-left font-['Plus_Jakarta_Sans'] text-sm font-medium">
+<span class="material-symbols-outlined">local_bar</span>
+                    Cold Drinks
+                </button>
+<button class="flex items-center gap-4 px-4 py-3 text-zinc-400 hover:bg-[#252525] border-l-4 border-transparent rounded-r-lg transition-colors duration-200 w-full text-left font-['Plus_Jakarta_Sans'] text-sm font-medium">
+<span class="material-symbols-outlined">restaurant</span>
+                    Starters
+                </button>
+<button class="flex items-center gap-4 px-4 py-3 text-zinc-400 hover:bg-[#252525] border-l-4 border-transparent rounded-r-lg transition-colors duration-200 w-full text-left font-['Plus_Jakarta_Sans'] text-sm font-medium">
+<span class="material-symbols-outlined">bakery_dining</span>
+                    Wraps
+                </button>
+<button class="flex items-center gap-4 px-4 py-3 text-zinc-400 hover:bg-[#252525] border-l-4 border-transparent rounded-r-lg transition-colors duration-200 w-full text-left font-['Plus_Jakarta_Sans'] text-sm font-medium">
+<span class="material-symbols-outlined">auto_awesome</span>
+                    Specialty
+                </button>
+</div>
+</aside>
+<!-- Product Grid -->
+<section class="flex-1 w-full pb-32 md:pb-0">
+<h2 class="font-h2 text-h2 text-on-surface mb-6">Tea Menu</h2>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-card-gap">
+<!-- Product Card 1 -->
+<div class="bg-surface-container rounded-xl border border-outline-variant overflow-hidden flex flex-row h-32 hover:border-primary-container/50 transition-colors">
+<div class="w-32 h-full bg-surface-container-highest shrink-0 relative">
+<img alt="Black Tea" class="w-full h-full object-cover" data-alt="close up of premium black tea in a clear glass cup on dark table" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBszNftsCIFYWeEFL3gcyJcjWPUZIChqx9BDOa7-5IWV7Xihgh-gl_TMVBZcbwexgsAls1DEkx-JZO1MXcYSSyb3ZHh_7LLAg-p48SnCMfsqbrdvvM404wjFYxIRlnUCyFAEwFvrFrnAj4N-8P5Ljpcpn2rFJxCFkGSWbboiXKRHOeqJNgIkbE6LUKdLbAFFytRgjoCgJT-QtsgknV6tWqOp1ED7xEptixoh6qzl1B3uZl7Q82ThMdXdUrgVamtDUSRutxvbhgEm2w"/>
+</div>
+<div class="p-4 flex flex-col justify-between flex-1">
+<div>
+<h3 class="font-h2 text-[18px] text-on-surface leading-tight">Black Tea</h3>
+<p class="font-body-md text-[14px] text-on-surface-variant">Signature Blend</p>
+</div>
+<div class="flex items-end justify-between mt-2">
+<span class="font-body-md text-primary-container font-semibold">₹40</span>
+<button class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center hover:bg-primary-container/80 transition-colors">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 2 -->
+<div class="bg-surface-container rounded-xl border border-outline-variant overflow-hidden flex flex-row h-32 hover:border-primary-container/50 transition-colors">
+<div class="w-32 h-full bg-surface-container-highest shrink-0 relative">
+<img alt="Milk Tea" class="w-full h-full object-cover" data-alt="creamy milk tea being poured into a cup top down view dark aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7pLIkWq50XctbEmIQjw3pmUPaIrmutq2GY9XzxYlMw0MiG7sqUI8HgzWaAmuCnx7XBXq9dluVutJHzYCVLE_Lc8puAov6ch9E8CG_dYCFhqheOUeaW4dVJZKmMUSyf9Xs_ur9uivwHEMXmkNdRYye527t2wPL6K-sp85NcAHvJNYNyW-oBwQySukVZaaQpWa6UqTHWmqaXxSiudWCZ6OdEmqtMZvU4txjBc4biEEBzGHtgtoLD2wKJE3pIiFOHRxaNGBF9yU9pZw"/>
+</div>
+<div class="p-4 flex flex-col justify-between flex-1">
+<div>
+<h3 class="font-h2 text-[18px] text-on-surface leading-tight">Milk Tea</h3>
+<p class="font-body-md text-[14px] text-on-surface-variant">Classic Assam</p>
+</div>
+<div class="flex items-end justify-between mt-2">
+<span class="font-body-md text-primary-container font-semibold">₹50</span>
+<button class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center hover:bg-primary-container/80 transition-colors">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 3 -->
+<div class="bg-surface-container rounded-xl border border-outline-variant overflow-hidden flex flex-row h-32 hover:border-primary-container/50 transition-colors">
+<div class="w-32 h-full bg-surface-container-highest shrink-0 relative">
+<img alt="Masala Chai" class="w-full h-full object-cover" data-alt="traditional indian masala chai in clay cup rustic dark background steaming" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA8yJI1-vD3vK-_pWMBmYWlM_X4OiD3Qv_OXcUUwtSxskttsg73RSubjtAcA2LcdCxV27ySoBkC_xwXzeqEy_pOsOKcN3p4igbk2WQ64KSuZJd01ZHFH-paWHzDIH-3fLSep7ptflJYMjNMD8zaaK_IFevvGQWSecahsI9Rx-2Y_i_q-PEwZtQ79KBM8IikFYpCc5Q4pdVmZKoUnSb5zD1QgAhnFqpPXCM3NY04jbACoVhnXn_E08X95kVgTJ8ieihiV4OyAtsGX1M"/>
+</div>
+<div class="p-4 flex flex-col justify-between flex-1">
+<div>
+<h3 class="font-h2 text-[18px] text-on-surface leading-tight">Masala Chai</h3>
+<p class="font-body-md text-[14px] text-on-surface-variant">Spiced Brew</p>
+</div>
+<div class="flex items-end justify-between mt-2">
+<span class="font-body-md text-primary-container font-semibold">₹60</span>
+<button class="w-8 h-8 rounded-full border border-primary-container text-primary-container flex items-center justify-center hover:bg-primary-container/10 transition-colors">
+<span class="material-symbols-outlined text-[20px]">remove</span>
+</button>
+<span class="font-body-md text-on-surface">1</span>
+<button class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center hover:bg-primary-container/80 transition-colors">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 4 -->
+<div class="bg-surface-container rounded-xl border border-outline-variant overflow-hidden flex flex-row h-32 hover:border-primary-container/50 transition-colors">
+<div class="w-32 h-full bg-surface-container-highest shrink-0 relative">
+<img alt="Green Tea" class="w-full h-full object-cover" data-alt="light green tea in elegant ceramic bowl on dark slate table" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9_7TJ0hjg0bmarthK_LgyDDbjJ9Z_1S8yWOS2Id-4XzCFk9UciQ1nnG2J6M0ekWjlUvFDyO1b_fGuAL5CJmGLASqgp-trjyUv7iNV25lQuUL99zGntJ8Ll6uNhPSVz5xIQOTs39qOitGFDIQOJRow-ZylhQy9F3i6aSrXjYkLsXegRM6gjtHD4CNK6Q-JlMFeGw7NRETaVs4Usdz8KQVfkt49c_7GOIZQrWQ_T7OUhdTIz15Z_kvJbnmx9zFyJMRfqIeRGBvpXXE"/>
+</div>
+<div class="p-4 flex flex-col justify-between flex-1">
+<div>
+<h3 class="font-h2 text-[18px] text-on-surface leading-tight">Green Tea</h3>
+<p class="font-body-md text-[14px] text-on-surface-variant">Sencha Leaf</p>
+</div>
+<div class="flex items-end justify-between mt-2">
+<span class="font-body-md text-primary-container font-semibold">₹45</span>
+<button class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center hover:bg-primary-container/80 transition-colors">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Fixed Gold Summary Bar / Cart -->
+<div class="fixed bottom-[92px] md:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm md:max-w-3xl z-40">
+<button class="w-full bg-primary-container text-on-primary-container rounded-full px-6 py-4 flex justify-between items-center shadow-[0_4px_20px_rgba(193,158,110,0.2)] hover:bg-primary-container/90 transition-colors">
+<div class="flex flex-col text-left">
+<span class="font-label-sm text-label-sm opacity-80 uppercase tracking-widest">Table 1</span>
+<span class="font-h2 text-[18px] leading-tight">View Cart (3)</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-h1 text-[24px]">₹135</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</div>
+</button>
+</div>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center h-16 px-4 mb-6 mx-auto w-[90%] max-w-md bg-[#252525]/80 dark:bg-[#252525]/80 backdrop-blur-lg rounded-full border border-[#C19E6E]/20 shadow-[0_8px_32px_rgba(0,0,0,0.5)] font-['Plus_Jakarta_Sans'] text-[10px] font-bold uppercase tracking-widest">
+<!-- Active: Home -->
+<a class="flex flex-col items-center justify-center text-[#C19E6E] relative after:content-[''] after:absolute after:-bottom-1 after:w-1 after:h-1 after:bg-[#C19E6E] after:rounded-full after:animate-pulse transition-all duration-500 ease-in-out transform active:scale-90 flex-1" href="#">
+<span class="material-symbols-outlined mb-1">grid_view</span>
+        Home
+    </a>
+<!-- Inactive -->
+<a class="flex flex-col items-center justify-center text-zinc-500 opacity-60 hover:text-[#C19E6E] transition-all duration-500 ease-in-out transform active:scale-90 flex-1" href="#">
+<span class="material-symbols-outlined mb-1">receipt_long</span>
+        Orders
+    </a>
+<a class="flex flex-col items-center justify-center text-zinc-500 opacity-60 hover:text-[#C19E6E] transition-all duration-500 ease-in-out transform active:scale-90 flex-1" href="#">
+<span class="material-symbols-outlined mb-1">analytics</span>
+        Insight
+    </a>
+<a class="flex flex-col items-center justify-center text-zinc-500 opacity-60 hover:text-[#C19E6E] transition-all duration-500 ease-in-out transform active:scale-90 flex-1" href="#">
+<span class="material-symbols-outlined mb-1">person</span>
+        Account
+    </a>
+</nav>
+</body></html>

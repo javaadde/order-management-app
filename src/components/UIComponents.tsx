@@ -1,5 +1,5 @@
 import React from 'react';
-import { 
+import {
   View, 
   Text, 
   TouchableOpacity, 
@@ -7,7 +7,11 @@ import {
   Platform, 
   ViewStyle,
   Image,
+  Modal,
+  Pressable,
+  Alert,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useCafeFlowStore } from '../store/cafeFlow';
 import { COLORS } from '../constants/theme';
 
@@ -67,7 +71,7 @@ export const Button: React.FC<ButtonProps> = ({
         style,
       ]}
     >
-      <Text style={[styles.btnText, textSizeStyles[size], { color: variant === 'secondary' ? t.text : '#121212' }]}>
+      <Text style={[styles.btnText, textSizeStyles[size], { color: variant === 'secondary' ? t.text : '#ffffff' }]}>
         {title}
       </Text>
     </TouchableOpacity>
@@ -113,10 +117,13 @@ interface BadgeProps {
 /**
  * Badge Component for status indicators
  */
-export const Badge: React.FC<BadgeProps> = ({ label, color = '#007AFF', textColor = '#FFF' }) => {
+export const Badge: React.FC<BadgeProps> = ({ label, color, textColor }) => {
+  const { theme } = useCafeFlowStore();
+  const t = COLORS[theme];
+
   return (
-    <View style={[styles.badge, { backgroundColor: color }]}>
-      <Text style={[styles.badgeText, { color: textColor }]}>{label}</Text>
+    <View style={[styles.badge, { backgroundColor: color || t.accent }]}>
+      <Text style={[styles.badgeText, { color: textColor || (theme === 'dark' ? '#121212' : '#ffffff') }]}>{label}</Text>
     </View>
   );
 };
@@ -171,7 +178,7 @@ export const QuantitySelector: React.FC<QuantitySelectorProps> = ({
       </TouchableOpacity>
       {onRemove && (
         <TouchableOpacity onPress={onRemove} style={[styles.qtyBtn, styles.removeBtn, { backgroundColor: theme === 'dark' ? '#450a0a' : '#FEF2F2' }]}>
-          <Text style={[styles.qtyBtnText, { color: '#FF3B30' }]}>✕</Text>
+          <Text style={[styles.qtyBtnText, { color: '#d94624' }]}>✕</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -229,10 +236,10 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
           <Text style={[styles.orderItemVariant, { color: t.muted }]}>{variantName}</Text>
           <Text style={[styles.orderItemQty, { color: t.accent }]}>Qty: {quantity}</Text>
         </View>
-        <View style={styles.orderItemRight}>
+        <View style={[styles.orderItemRight]}>
           <Text style={[styles.orderItemPrice, { color: t.accent }]}>₹{price}</Text>
           <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
-            <Text style={[styles.statusText, { color: status === 'ready' ? '#121212' : '#FFF' }]}>{status}</Text>
+            <Text style={[styles.statusText, { color: status === 'ready' ? '#ffffff' : '#ffffff' }]}>{status}</Text>
           </View>
         </View>
       </View>
@@ -240,11 +247,120 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
   );
 };
 
+interface NavBarProps {
+  title: string;
+  subtitle?: string;
+  onLogout: () => void;
+  showResetPassword?: boolean;
+  showBack?: boolean;
+  onBack?: () => void;
+  rightComponent?: React.ReactNode;
+}
+
+/**
+ * Modern NavBar Component
+ * Includes account details, user name, and settings options
+ */
+export const NavBar: React.FC<NavBarProps> = ({ 
+  title, 
+  subtitle, 
+  onLogout,
+  showResetPassword = true,
+  showBack = false,
+  onBack,
+  rightComponent
+}) => {
+  const { theme } = useCafeFlowStore();
+  const t = COLORS[theme];
+  const [showMenu, setShowMenu] = React.useState(false);
+  const router = useRouter();
+
+  const handleResetPassword = () => {
+    setShowMenu(false);
+    Alert.alert(
+      'Reset Password',
+      'A password reset link has been sent to your registered contact.',
+      [{ text: 'OK' }]
+    );
+  };
+
+  return (
+    <View style={[styles.navBar, { backgroundColor: t.accent }]}>
+      <View style={styles.navBarLeftRow}>
+        {showBack && (
+          <TouchableOpacity 
+            onPress={onBack || (() => router.back())}
+            style={[styles.backButton, { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)' }]}
+          >
+            <Text style={[styles.navIconText, { color: theme === 'dark' ? '#121212' : '#ffffff' }]}>‹</Text>
+          </TouchableOpacity>
+        )}
+        <View style={styles.navBarLeft}>
+          <Text style={[styles.navBarTitle, { color: theme === 'dark' ? '#121212' : '#ffffff' }]}>{title}</Text>
+          {subtitle && <Text style={[styles.navBarSubtitle, { color: theme === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.8)' }]}>{subtitle}</Text>}
+        </View>
+      </View>
+
+      <View style={styles.navBarRight}>
+        {rightComponent}
+        <TouchableOpacity 
+          onPress={() => setShowMenu(true)}
+          style={[
+            styles.userAvatar,
+            { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)' },
+            rightComponent ? { marginLeft: 12 } : undefined,
+          ]}
+        >
+          <Text style={[styles.avatarIconText, { color: theme === 'dark' ? '#121212' : '#ffffff' }]}>U</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Modal
+        visible={showMenu}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowMenu(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay} 
+          onPress={() => setShowMenu(false)}
+        >
+          <View style={[styles.navMenu, { backgroundColor: t.card, borderColor: t.border }]}>
+            <View style={styles.menuHeader}>
+              <View style={[styles.menuAvatar, { backgroundColor: t.accent }]}>
+                <Text style={[styles.menuAvatarText, { color: theme === 'dark' ? '#121212' : '#ffffff' }]}>U</Text>
+              </View>
+              <View style={styles.menuHeaderText}>
+                <Text style={[styles.menuName, { color: t.text }]}>{title}</Text>
+                <Text style={[styles.menuRole, { color: t.muted }]}>{subtitle || 'Staff Member'}</Text>
+              </View>
+            </View>
+
+            <View style={[styles.menuDivider, { backgroundColor: t.border }]} />
+
+            {showResetPassword && (
+              <TouchableOpacity style={styles.menuItem} onPress={handleResetPassword}>
+                <Text style={[styles.menuIconText, { color: t.text }]}>#</Text>
+                <Text style={[styles.menuItemText, { color: t.text }]}>Reset Password</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); onLogout(); }}>
+              <Text style={[styles.menuIconText, { color: '#DC2626' }]}>×</Text>
+              <Text style={[styles.menuItemText, { color: '#DC2626' }]}>Logout</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
   btn: {
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 24, // More rounded for modern look
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -254,38 +370,34 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   primaryBtn: {
-    backgroundColor: '#C5A47E', // Gold
   },
   secondaryBtn: {
-    backgroundColor: '#1C1C1C', // Dark Gray
     borderWidth: 1,
-    borderColor: '#C5A47E',
   },
   dangerBtn: {
     backgroundColor: '#DC2626', // Red 600
   },
   successBtn: {
-    backgroundColor: '#C5A47E', // Gold
   },
   smallBtn: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 18,
+    borderRadius: 8,
   },
   mediumBtn: {
     paddingVertical: 14,
     paddingHorizontal: 24,
-    borderRadius: 28,
+    borderRadius: 10,
   },
   largeBtn: {
     paddingVertical: 18,
     paddingHorizontal: 32,
-    borderRadius: 35,
+    borderRadius: 12,
   },
   btnText: {
-    fontWeight: '700',
-    color: '#121212', // Dark text on gold buttons
-    letterSpacing: 0.5,
+    fontWeight: '800',
+    letterSpacing: 0,
+    textTransform: 'uppercase',
   },
   smallText: {
     fontSize: 12,
@@ -301,30 +413,28 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: '#1C1C1C',
-    borderRadius: 24,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: '#2C2C2C',
   },
 
   badge: {
     paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 14,
+    borderRadius: 8,
     alignSelf: 'flex-start',
   },
   badgeText: {
     fontSize: 11,
     fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0,
   },
 
   sectionHeader: {
@@ -334,28 +444,25 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#C5A47E',
     marginBottom: 4,
-    letterSpacing: -1,
+    letterSpacing: 0,
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
   },
   sectionSubtitle: {
     fontSize: 14,
     color: '#6B7280',
     fontWeight: '500',
-    letterSpacing: 0.5,
+    letterSpacing: 0,
   },
 
 
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2C',
     borderRadius: 20,
     paddingHorizontal: 6,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: '#3C3C3C',
   },
   qtyBtn: {
     width: 32,
@@ -373,7 +480,6 @@ const styles = StyleSheet.create({
   qtyBtnText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#C5A47E',
   },
   qtyText: {
     fontSize: 16,
@@ -381,7 +487,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     minWidth: 24,
     textAlign: 'center',
-    color: '#F5F5F5',
   },
   removeBtn: {
     marginLeft: 8,
@@ -437,14 +542,12 @@ const styles = StyleSheet.create({
   },
   orderItemQty: {
     fontSize: 13,
-    color: '#C5A47E',
     marginTop: 6,
     fontWeight: '700',
   },
   orderItemPrice: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#C5A47E',
   },
   statusBadge: {
     paddingVertical: 6,
@@ -458,5 +561,153 @@ const styles = StyleSheet.create({
     color: '#FFF',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  navBar: {
+    paddingHorizontal: 24,
+    paddingVertical: 18,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 15,
+    elevation: 12,
+  },
+  navBarLeft: {
+    flex: 1,
+  },
+  navBarLeftRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  navBarTitle: {
+    fontSize: 24,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    letterSpacing: -0.5,
+  },
+  navBarSubtitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: 2,
+  },
+  navBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  userAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop: 80,
+    paddingRight: 20,
+  },
+  navMenu: {
+    width: 280,
+    borderRadius: 24,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.3,
+    shadowRadius: 30,
+    elevation: 20,
+    borderWidth: 1,
+  },
+  menuHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    padding: 12,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.03)',
+  },
+  menuHeaderText: {
+    flex: 1,
+  },
+  menuAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  menuAvatarText: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#ffffff',
+  },
+  menuName: {
+    fontSize: 20,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+  },
+  menuRole: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: 2,
+  },
+  menuDivider: {
+    height: 1,
+    marginBottom: 12,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  menuItemText: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 12,
+  },
+  navIconText: {
+    fontSize: 34,
+    fontWeight: '700',
+    lineHeight: 34,
+  },
+  avatarIconText: {
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  menuIconText: {
+    width: 20,
+    fontSize: 20,
+    fontWeight: '900',
+    textAlign: 'center',
   },
 });

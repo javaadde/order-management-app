@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useRouter } from 'expo-router';
-import { Button, Card, SectionHeader } from '../../src/components/UIComponents';
+import { Button, Card, SectionHeader, NavBar } from '../../src/components/UIComponents';
 import { useCafeFlowStore } from '../../src/store/cafeFlow';
 import { formatCurrency } from '../../src/utils/helpers';
 import { COLORS } from '../../src/constants/theme';
@@ -22,7 +22,7 @@ import { COLORS } from '../../src/constants/theme';
  */
 export default function OrderSummary() {
   const router = useRouter();
-  const { tempCartItems, currentTableNumber, submitOrder, removeItemFromCart, theme } =
+  const { tempCartItems, currentTableNumber, submitOrder, removeItemFromCart, theme, setRole } =
     useCafeFlowStore();
   
   const t = COLORS[theme];
@@ -30,6 +30,15 @@ export default function OrderSummary() {
   if (!currentTableNumber || tempCartItems.length === 0) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: t.background }]}>
+        <NavBar 
+          title="Cart" 
+          subtitle="Review Items" 
+          onLogout={() => {
+            setRole(null);
+            router.replace('/');
+          }}
+          showBack={true}
+        />
         <View style={styles.emptyContainer}>
 
           <View style={styles.emptyIconCircle}>
@@ -64,6 +73,20 @@ export default function OrderSummary() {
     }
   };
 
+  const handleLogout = () => {
+    Alert.alert('Logout', 'Are you sure you want to end your session?', [
+      { text: 'Cancel', style: 'cancel' },
+      { 
+        text: 'Logout', 
+        style: 'destructive',
+        onPress: () => {
+          setRole(null);
+          router.replace('/');
+        }
+      },
+    ]);
+  };
+
   const totalPrice = tempCartItems.reduce((sum, item) => sum + item.totalPrice, 0);
 
   // Group items by chef for display
@@ -83,16 +106,12 @@ export default function OrderSummary() {
       
       {/* Header */}
 
-      <View style={[styles.header, { backgroundColor: t.card, borderBottomColor: t.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: t.surface }]}>
-          <Text style={[styles.backArrow, { color: t.text }]}>←</Text>
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={[styles.headerTitle, { color: t.accent }]}>Review Order</Text>
-          <Text style={[styles.headerSubtitle, { color: t.muted }]}>Table {currentTableNumber}</Text>
-        </View>
-        <View style={{ width: 40 }} />
-      </View>
+      <NavBar 
+        title="Review Order" 
+        subtitle={currentTableNumber ? `Table ${currentTableNumber}` : ''} 
+        onLogout={handleLogout}
+        showBack={true}
+      />
 
       <ScrollView 
         style={styles.content}

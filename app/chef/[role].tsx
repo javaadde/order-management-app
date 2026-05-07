@@ -14,7 +14,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Platform } from 'react-native';
 
 import { useCafeFlowStore } from '../../src/store/cafeFlow';
-import { OrderItemCard } from '../../src/components/UIComponents';
+import { OrderItemCard, NavBar } from '../../src/components/UIComponents';
 import { CHEF_INFO, MENU_ITEMS } from '../../src/constants/menu';
 import { ChefRole, ItemStatus } from '../../src/types';
 import { formatTime } from '../../src/utils/helpers';
@@ -92,18 +92,29 @@ export default function ChefPanel() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: t.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: t.card, borderBottomColor: t.border }]}>
-        <View>
-          <Text style={[styles.headerTitle, { color: t.accent }]}>{chefInfo.name}</Text>
-          <View style={[styles.specialtyBadge, { backgroundColor: theme === 'dark' ? 'rgba(197, 164, 126, 0.1)' : '#ECFDF5' }]}>
-            <Text style={[styles.specialtyText, { color: theme === 'dark' ? t.accent : '#059669' }]}>{chefInfo.specialty}</Text>
-          </View>
-        </View>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-          <Text style={styles.logoutText}>Exit Kitchen</Text>
-        </TouchableOpacity>
+      {/* Texture Overlay */}
+      <View style={styles.textureOverlay} pointerEvents="none">
+        {[...Array(30)].map((_, i) => (
+          <View
+            key={`dot-${i}`}
+            style={[
+              styles.textureDot,
+              {
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                opacity: 0.1,
+                backgroundColor: t.text,
+              },
+            ]}
+          />
+        ))}
       </View>
+
+      <NavBar 
+        title={chefInfo.name} 
+        subtitle={chefInfo.specialty} 
+        onLogout={handleLogout} 
+      />
 
       {/* Modern Kitchen Tabs */}
       <View style={[styles.tabWrapper, { backgroundColor: t.card }]}>
@@ -206,27 +217,27 @@ export default function ChefPanel() {
               <View style={styles.ticketFooter}>
                 {activeTab === 'pending' && (
                   <TouchableOpacity 
-                    style={styles.actionBtnPrimary}
+                    style={[styles.actionBtnPrimary, { backgroundColor: theme === 'dark' ? t.accent : '#059669' }]}
                     onPress={() => {
                       order.items.forEach((item) => {
                         handleStatusChange(order.id, item.id, 'preparing');
                       });
                     }}
                   >
-                    <Text style={styles.actionBtnText}>Accept All Items</Text>
+                    <Text style={[styles.actionBtnText, { color: theme === 'dark' ? '#121212' : '#ffffff' }]}>Accept All Items</Text>
                   </TouchableOpacity>
                 )}
 
                 {activeTab === 'preparing' && (
                   <TouchableOpacity 
-                    style={styles.actionBtnSuccess}
+                    style={[styles.actionBtnSuccess, { backgroundColor: theme === 'dark' ? t.accent : '#10B981' }]}
                     onPress={() => {
                       order.items.forEach((item) => {
                         handleStatusChange(order.id, item.id, 'ready');
                       });
                     }}
                   >
-                    <Text style={styles.actionBtnText}>Mark All as Ready</Text>
+                    <Text style={[styles.actionBtnText, { color: theme === 'dark' ? '#121212' : '#ffffff' }]}>Mark All as Ready</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -267,14 +278,21 @@ export default function ChefPanel() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+  },
+  textureOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+    overflow: 'hidden',
+  },
+  textureDot: {
+    position: 'absolute',
+    width: 2,
+    height: 2,
+    borderRadius: 1,
   },
   header: {
-    backgroundColor: '#1C1C1C',
     paddingHorizontal: 24,
     paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2C',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

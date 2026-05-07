@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  Alert,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +20,7 @@ import {
   Badge,
   SectionHeader,
   QuantitySelector,
+  NavBar,
 } from '../../src/components/UIComponents';
 import { useCafeFlowStore } from '../../src/store/cafeFlow';
 import {
@@ -42,7 +44,7 @@ interface VariantModalState {
  */
 export default function MenuScreen() {
   const router = useRouter();
-  const { addItemToCart, tempCartItems, submitOrder, currentTableNumber, selectTable, theme } =
+  const { addItemToCart, tempCartItems, submitOrder, currentTableNumber, selectTable, theme, setRole } =
     useCafeFlowStore();
   
   const t = COLORS[theme];
@@ -54,6 +56,20 @@ export default function MenuScreen() {
     quantity: 1,
     selectedVariantId: null,
   });
+  
+  const handleLogout = () => {
+    Alert.alert('Logout', 'Are you sure you want to end your session?', [
+      { text: 'Cancel', style: 'cancel' },
+      { 
+        text: 'Logout', 
+        style: 'destructive',
+        onPress: () => {
+          setRole(null);
+          router.replace('/');
+        }
+      },
+    ]);
+  };
 
   const categoryItems = getMenuItemsByCategory(selectedCategory);
 
@@ -96,26 +112,25 @@ export default function MenuScreen() {
       
       {/* Dynamic Header */}
 
-      <View style={[styles.header, { backgroundColor: t.card, borderBottomColor: t.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: t.surface }]}>
-          <Text style={[styles.backArrow, { color: t.text }]}>←</Text>
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={[styles.headerTitle, { color: t.accent }]}>Menu</Text>
-          <Text style={[styles.headerSubtitle, { color: t.muted }]}>Table {currentTableNumber || '??'}</Text>
-        </View>
-        <TouchableOpacity 
-          style={[styles.cartIconBtn, { backgroundColor: theme === 'dark' ? 'rgba(197, 164, 126, 0.1)' : '#ECFDF5' }]}
-          onPress={() => router.push('/servant/order-summary')}
-        >
-          <Text style={styles.cartIcon}>🛒</Text>
-          {tempCartItems.length > 0 && (
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>{tempCartItems.length}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
+      <NavBar 
+        title="Menu" 
+        subtitle={currentTableNumber ? `Table ${currentTableNumber}` : 'Select Table'} 
+        onLogout={handleLogout}
+        showBack={true}
+        rightComponent={
+          <TouchableOpacity 
+            style={[styles.cartIconBtn, { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)' }]}
+            onPress={() => router.push('/servant/order-summary')}
+          >
+            <Text style={[styles.cartIconText, { color: theme === 'dark' ? '#121212' : '#ffffff' }]}>C</Text>
+            {tempCartItems.length > 0 && (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>{tempCartItems.length}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        }
+      />
 
       {/* Category Selection Chips */}
       <View style={[styles.categoryWrapper, { backgroundColor: t.card }]}>
@@ -527,6 +542,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
+  modalHeader: {
+    paddingHorizontal: 30,
+    marginBottom: 18,
+  },
+  cartIconText: {
+    fontSize: 16,
+    fontWeight: '900',
+  },
   modalTextInfo: {
     flex: 1,
     paddingRight: 10,
@@ -651,4 +674,3 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
-

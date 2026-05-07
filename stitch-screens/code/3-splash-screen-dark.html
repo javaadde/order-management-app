@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Black Tea - Splash</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "background": "#16130f",
+                    "on-secondary": "#31312c",
+                    "secondary-fixed-dim": "#c9c6c0",
+                    "error": "#ffb4ab",
+                    "on-primary-container": "#4d350f",
+                    "surface-container": "#221f1b",
+                    "error-container": "#93000a",
+                    "tertiary": "#b4c8e8",
+                    "surface-container-lowest": "#100e0a",
+                    "secondary-container": "#474742",
+                    "surface-container-low": "#1e1b17",
+                    "tertiary-fixed-dim": "#b4c8e8",
+                    "on-tertiary-fixed-variant": "#344863",
+                    "on-surface": "#e9e1db",
+                    "surface-container-high": "#2d2926",
+                    "outline": "#9a8f82",
+                    "on-tertiary-fixed": "#051c35",
+                    "on-primary-fixed": "#291800",
+                    "surface-container-highest": "#383430",
+                    "surface-variant": "#383430",
+                    "on-error-container": "#ffdad6",
+                    "on-tertiary-container": "#273b55",
+                    "secondary-fixed": "#e5e2db",
+                    "secondary": "#c9c6c0",
+                    "surface-tint": "#e6c08e",
+                    "primary-fixed": "#ffddb2",
+                    "primary-container": "#c19e6e",
+                    "on-tertiary": "#1d314b",
+                    "tertiary-container": "#91a5c4",
+                    "inverse-on-surface": "#33302c",
+                    "on-secondary-fixed": "#1c1c18",
+                    "on-primary": "#432c06",
+                    "primary": "#e6c08e",
+                    "tertiary-fixed": "#d3e3ff",
+                    "surface-dim": "#16130f",
+                    "outline-variant": "#4e453b",
+                    "surface": "#16130f",
+                    "on-secondary-fixed-variant": "#474742",
+                    "on-primary-fixed-variant": "#5c421a",
+                    "surface-bright": "#3c3834",
+                    "inverse-surface": "#e9e1db",
+                    "on-error": "#690005",
+                    "inverse-primary": "#765930",
+                    "on-background": "#e9e1db",
+                    "on-surface-variant": "#d1c4b6",
+                    "on-secondary-container": "#b7b5af",
+                    "primary-fixed-dim": "#e6c08e"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "8px",
+                    "container-padding": "24px",
+                    "gutter": "16px",
+                    "card-gap": "20px"
+            },
+            "fontFamily": {
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "display": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "label-sm": [
+                            "Inter"
+                    ],
+                    "h1": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "h2": [
+                            "Plus Jakarta Sans"
+                    ]
+            },
+            "fontSize": {
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "display": [
+                            "40px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "1",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "h1": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "h2": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "600"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background h-screen w-screen flex flex-col items-center justify-center relative overflow-hidden">
+<div class="absolute inset-0 w-full h-full opacity-[0.03] z-0 pointer-events-none" data-alt="subtle dark charcoal background with a very faint, abstract pattern resembling scattered loose tea leaves, extremely low contrast, creating a luxurious moody texture" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDkL68KoBgeTlsDzreLMDP9xJHpOLQzkcLvbjT0BVeAxEVCrBVHhqAvXqPs2EqQj8sAE1zEj99HObsCissgSEE9--zWtEKxP5ckhd8az8zV05IsySMVsTyLM3MInmGgGwPpUT1KzWfnFOwmX_LTZeWc8_xC6j0DPJHlC8UZ8yg_y9iLTH7cvF-USs7XPz8jENIFLFX0FU0QMbCR19T7ZrHJB6oU4lkvl-pw2opSMDxmdrizy8q7_dFZ08iy2wusANSC9ck-ld7HqAk'); background-size: cover; background-position: center;"></div>
+<div class="z-10 flex flex-col items-center justify-center px-container-padding text-center">
+<img class="w-32 h-32 md:w-48 md:h-48 object-contain mb-8" data-alt="minimalist, high-end gold logo emblem for a luxury cafe, crisp edges, glowing softly against a pure dark charcoal background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBT7FxHZVFggcfRIiSq1oQXk03GYZJeQHPFJFxaNT35tjdX0bEV5J70_GzuqE3OqnhXvBXVN8MlmuiKZIlATmPusVc-X0axwJD7PXvnkEvixdrWGqdIrlaVthyesTeO_qLke9GSamxAwHbtDzfDTDZYjn0krMdYaTfUABAYKFjnnsZWttNmopAxKwo1CObz5FK4mpPxIbR7k-mq3sl2Aq_B8lIXxH_YtiYaXIjE-ZvaewDOu2wwf2lpi-fZ7Ifh9ZghMIJHyqEe2U4"/>
+<h1 class="font-display text-display text-primary-container uppercase tracking-[0.2em] md:tracking-[0.3em]">
+            THE BLACK TEA
+        </h1>
+</div>
+</body></html>

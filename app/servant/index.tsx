@@ -7,13 +7,14 @@ import {
   TouchableOpacity,
   Dimensions,
   Platform,
+  Alert,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useRouter } from 'expo-router';
 import { useCafeFlowStore } from '../../src/store/cafeFlow';
-import { Button, Card, Badge, SectionHeader } from '../../src/components/UIComponents';
+import { Button, Card, Badge, SectionHeader, NavBar } from '../../src/components/UIComponents';
 import { TABLE_NUMBERS } from '../../src/constants/menu';
 import { formatCurrency } from '../../src/utils/helpers';
 import { COLORS } from '../../src/constants/theme';
@@ -42,22 +43,48 @@ export default function ServantPanel() {
   };
 
   const handleLogout = () => {
-    setRole(null);
-    router.push('/');
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to end your session?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Logout', 
+          style: 'destructive',
+          onPress: () => {
+            setRole(null);
+            router.push('/');
+          }
+        },
+      ]
+    );
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: t.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: t.card, borderBottomColor: t.border }]}>
-        <View>
-          <Text style={[styles.headerTitle, { color: t.accent }]}>Kuttappi's Desk</Text>
-          <Text style={[styles.headerSubtitle, { color: t.muted }]}>Order Management</Text>
-        </View>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-          <Text style={styles.logoutText}>Exit</Text>
-        </TouchableOpacity>
+      {/* Texture Overlay */}
+      <View style={styles.textureOverlay} pointerEvents="none">
+        {[...Array(30)].map((_, i) => (
+          <View
+            key={`dot-${i}`}
+            style={[
+              styles.textureDot,
+              {
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                opacity: 0.1,
+                backgroundColor: t.text,
+              },
+            ]}
+          />
+        ))}
       </View>
+
+      <NavBar 
+        title="Kuttappi's Desk" 
+        subtitle="Order Management" 
+        onLogout={handleLogout} 
+      />
 
       {/* Modern Floating Tab Navigation */}
       <View style={[styles.tabWrapper, { backgroundColor: t.card }]}>
@@ -108,8 +135,8 @@ export default function ServantPanel() {
                     ]}
                   >
                     <View style={styles.tableCardContent}>
-                      <Text style={[styles.tableLabel, isSelected ? { color: '#121212' } : { color: t.muted }]}>Table</Text>
-                      <Text style={[styles.tableNumBig, isSelected ? { color: '#121212' } : { color: t.text }]}>{tableNum}</Text>
+                      <Text style={[styles.tableLabel, isSelected ? { color: theme === 'dark' ? '#121212' : '#ffffff' } : { color: t.muted }]}>Table</Text>
+                      <Text style={[styles.tableNumBig, isSelected ? { color: theme === 'dark' ? '#121212' : '#ffffff' } : { color: t.text }]}>{tableNum}</Text>
                       {tableOrders.length > 0 && !isSelected && (
                         <View style={styles.miniStatusBadge}>
                           <View style={styles.statusDot} />
@@ -236,7 +263,7 @@ export default function ServantPanel() {
             style={[styles.mainActionButton, { backgroundColor: t.accent }]}
             onPress={() => router.push('/servant/menu')}
           >
-            <Text style={[styles.mainActionText, { color: '#121212' }]}>Open Menu for Table {currentTableNumber}</Text>
+            <Text style={[styles.mainActionText, { color: theme === 'dark' ? '#121212' : '#ffffff' }]}>Open Menu for Table {currentTableNumber}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -247,14 +274,21 @@ export default function ServantPanel() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+  },
+  textureOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+    overflow: 'hidden',
+  },
+  textureDot: {
+    position: 'absolute',
+    width: 2,
+    height: 2,
+    borderRadius: 1,
   },
   header: {
-    backgroundColor: '#1C1C1C',
     paddingHorizontal: 24,
     paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2C',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -561,24 +595,16 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: 24,
     paddingVertical: 20,
-    backgroundColor: '#FFF',
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
   },
   mainActionButton: {
-    backgroundColor: '#059669',
     height: 60,
     borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
     elevation: 8,
   },
   mainActionText: {
-    color: '#FFF',
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.5,

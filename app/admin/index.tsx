@@ -33,6 +33,7 @@ export default function AdminPanel() {
     setRole,
     deleteOrder,
     clearCompletedOrders,
+    markOrderAsServed,
     theme,
   } = useCafeFlowStore();
 
@@ -135,12 +136,29 @@ export default function AdminPanel() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: t.background }]}>
+      {/* Texture Overlay */}
+      <View style={styles.textureOverlay} pointerEvents="none">
+        {[...Array(30)].map((_, i) => (
+          <View
+            key={`dot-${i}`}
+            style={[
+              styles.textureDot,
+              {
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                opacity: 0.05,
+              },
+            ]}
+          />
+        ))}
+      </View>
+
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: t.card, borderBottomColor: t.border }]}>
+      <View style={[styles.header, { backgroundColor: t.accent, borderBottomLeftRadius: 30, borderBottomRightRadius: 30, elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 }]}>
         <View>
-          <Text style={[styles.headerTitle, { color: t.accent }]}>Admin Panel</Text>
-          <View style={[styles.managerBadge, { backgroundColor: theme === 'dark' ? 'rgba(67, 56, 202, 0.2)' : '#EEF2FF' }]}>
-            <Text style={[styles.managerText, { color: theme === 'dark' ? '#818CF8' : '#4338CA' }]}>Manager Access</Text>
+          <Text style={[styles.headerTitle, { color: '#ffffff' }]}>Admin Panel</Text>
+          <View style={[styles.managerBadge, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
+            <Text style={[styles.managerText, { color: '#ffffff' }]}>Manager Access</Text>
           </View>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
@@ -495,14 +513,22 @@ export default function AdminPanel() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAF9',
+  },
+  textureOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+    overflow: 'hidden',
+  },
+  textureDot: {
+    position: 'absolute',
+    width: 2,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#000',
   },
   header: {
-    backgroundColor: '#FFF',
     paddingHorizontal: 24,
     paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
