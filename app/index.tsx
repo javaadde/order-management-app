@@ -1,111 +1,56 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, Platform, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  Platform,
+  TouchableOpacity,
+  Dimensions,
+  Image,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCafeFlowStore } from '../src/store/cafeFlow';
 import { COLORS } from '../src/constants/theme';
 
-/**
- * Role Selection Screen
- * First screen where user selects their role
- */
-export default function RoleSelection() {
+const { width, height } = Dimensions.get('window');
+const PANEL_HEIGHT = Math.min(Math.max(height * 0.2, 166), 188);
+const PANEL_OVERLAP = 42;
+const INK = '#1B1A17';
+const MUTED = '#837E78';
+const PAPER = '#FFFFFF';
+
+export default function LoginScreen() {
   const router = useRouter();
-  const { setRole, theme } = useCafeFlowStore();
-  const t = COLORS[theme];
+  const { setRole } = useCafeFlowStore();
+  const t = COLORS.light;
 
-  const handleSelectRole = (role: 'servant' | 'chef_a' | 'chef_b' | 'chef_c') => {
-    setRole(role);
-
-    if (role === 'servant') {
-      router.push('/servant');
-    } else {
-      router.push(`/chef/${role}`);
-    }
+  const handleLogin = () => {
+    setRole('servant');
+    router.push('/servant');
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: t.background }]}>
-      <View style={styles.textureOverlay} pointerEvents="none">
-        <View style={[styles.glowBlock, { backgroundColor: t.accent }]} />
-        <View style={[styles.gridLine, { backgroundColor: t.border, top: 116 }]} />
-        <View style={[styles.gridLine, { backgroundColor: t.border, bottom: 156 }]} />
+      <View style={styles.screen}>
+        <Image
+          source={require('../assets/the-black-tea-login.jpg')}
+          style={styles.heroImage}
+          resizeMode="cover"
+        />
+
+        <View style={styles.panel}>
+          <View style={styles.panelFill} />
+          <View style={styles.panelCurve} />
+          <Text style={styles.title}>WELCOME</Text>
+          <Text style={styles.subtitle}>Find your next space, feel at home</Text>
+          <Text style={styles.subtitle}>Where comfort meets convenience</Text>
+
+          <TouchableOpacity activeOpacity={0.86} onPress={handleLogin} style={styles.loginButton}>
+            <Text style={styles.loginButtonText}>Login</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-      
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={[styles.kicker, { color: t.accent }]}>DINEFLOW OS</Text>
-          <Text style={[styles.appName, { color: t.text }]}>The Black Tea</Text>
-          <Text style={[styles.subtitle, { color: t.muted }]}>Choose a station and jump straight into service.</Text>
-        </View>
-
-        <View style={styles.rolesContainer}>
-          {[
-            {
-              role: 'servant' as const,
-              label: 'Waiter Desk',
-              code: '01',
-              station: 'Tables / Cart / Live Orders',
-              description: 'Assign tables, build carts, and track each ticket from floor to kitchen.',
-            },
-            {
-              role: 'chef_a' as const,
-              label: 'Tea Station',
-              code: 'A',
-              station: 'Chef A',
-              description: 'Owns tea, infusions, and hot beverage tickets.',
-            },
-            {
-              role: 'chef_b' as const,
-              label: 'Cold Bar',
-              code: 'B',
-              station: 'Chef B',
-              description: 'Handles mojitos, lime, soda, fries, nuggets, and starters.',
-            },
-            {
-              role: 'chef_c' as const,
-              label: 'Wrap Line',
-              code: 'C',
-              station: 'Chef C',
-              description: 'Prepares wraps, cones, momos, and specials.',
-            },
-          ].map((item) => (
-            <TouchableOpacity
-              key={item.role}
-              activeOpacity={0.82}
-              onPress={() => handleSelectRole(item.role)}
-              style={[styles.roleCard, { backgroundColor: t.card, borderColor: t.border }]}
-            >
-              <View style={styles.roleCardTop}>
-                <View style={[styles.stationMark, { backgroundColor: t.surface, borderColor: t.border }]}>
-                  <Text style={[styles.stationCode, { color: t.accent }]}>{item.code}</Text>
-                </View>
-                <View style={[styles.enterBadge, { backgroundColor: t.accent }]}>
-                  <Text style={styles.enterBadgeText}>Enter</Text>
-                </View>
-              </View>
-              <Text style={[styles.roleSubtitle, { color: t.accent }]}>{item.station}</Text>
-              <Text style={[styles.roleTitle, { color: t.text }]}>{item.label}</Text>
-              <Text style={[styles.roleDescription, { color: t.muted }]}>{item.description}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <TouchableOpacity
-          activeOpacity={0.82}
-          onPress={() => router.push('/admin')}
-          style={[styles.adminCard, { backgroundColor: t.surface, borderColor: t.border }]}
-        >
-          <View>
-            <Text style={[styles.roleSubtitle, { color: t.accent }]}>Manager</Text>
-            <Text style={[styles.adminTitle, { color: t.text }]}>Open admin dashboard</Text>
-          </View>
-          <Text style={[styles.adminArrow, { color: t.accent }]}>›</Text>
-        </TouchableOpacity>
-
-        <View style={[styles.footer, { borderTopColor: t.border }]}>
-          <Text style={[styles.footerText, { color: t.muted }]}>SERVICE BUILD / 1.0.0</Text>
-        </View>
-      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -114,144 +59,73 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  textureOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'transparent',
+  screen: {
+    flex: 1,
     overflow: 'hidden',
   },
-  glowBlock: {
+  heroImage: {
+    width: width + 8,
+    height: height - PANEL_HEIGHT + PANEL_OVERLAP,
+  },
+  panel: {
+    height: PANEL_HEIGHT,
+    alignItems: 'center',
+    marginTop: -PANEL_OVERLAP,
+    paddingHorizontal: 30,
+    paddingTop: 40,
+    backgroundColor: 'transparent',
+    borderTopLeftRadius: 56,
+    borderTopRightRadius: 56,
+    zIndex: 2,
+  },
+  panelFill: {
     position: 'absolute',
-    width: 210,
-    height: 210,
-    borderRadius: 105,
-    top: -70,
-    right: -82,
-    opacity: 0.14,
+    top: 38,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: PAPER,
+    borderTopLeftRadius: 56,
+    borderTopRightRadius: 56,
   },
-  gridLine: {
+  panelCurve: {
     position: 'absolute',
-    left: 24,
-    right: 24,
-    height: 1,
-    opacity: 0.35,
+    top: -34,
+    left: -width * 0.18,
+    width: width * 1.36,
+    height: 88,
+    borderRadius: width * 0.68,
+    backgroundColor: PAPER,
   },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 28,
-  },
-  header: {
-    marginTop: 18,
-    marginBottom: 34,
-  },
-  kicker: {
-    fontSize: 11,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 0,
-    marginBottom: 12,
-  },
-  appName: {
-    fontSize: 44,
+  title: {
+    color: '#4B4A48',
+    fontSize: 25,
+    lineHeight: 30,
     fontWeight: '900',
     letterSpacing: 0,
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    fontFamily: Platform.OS === 'ios' ? 'Avenir Next Condensed' : 'sans-serif-condensed',
   },
   subtitle: {
-    fontSize: 16,
-    marginTop: 10,
-    fontWeight: '600',
-    lineHeight: 23,
-    maxWidth: 320,
+    color: MUTED,
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '700',
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'sans-serif',
   },
-  rolesContainer: {
-    gap: 14,
-    marginBottom: 16,
-  },
-  roleCard: {
-    borderRadius: 12,
-    padding: 18,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.14,
-    shadowRadius: 18,
-    elevation: 4,
-  },
-  roleCardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 18,
-  },
-  stationMark: {
-    width: 54,
-    height: 54,
-    borderRadius: 10,
+  loginButton: {
+    width: Math.min(width - 128, 216),
+    minHeight: 38,
+    borderRadius: 22,
+    marginTop: 18,
+    backgroundColor: INK,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
   },
-  stationCode: {
-    fontSize: 20,
-    fontWeight: '900',
-  },
-  enterBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  enterBadgeText: {
-    color: '#211A14',
+  loginButtonText: {
+    color: PAPER,
     fontSize: 12,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-  },
-  roleTitle: {
-    fontSize: 25,
-    fontWeight: '900',
-    marginBottom: 8,
-    letterSpacing: 0,
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-  },
-  roleSubtitle: {
-    fontSize: 11,
-    fontWeight: '900',
-    marginBottom: 6,
-    textTransform: 'uppercase',
-    letterSpacing: 0,
-  },
-  roleDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '600',
-  },
-  adminCard: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 26,
-  },
-  adminTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  adminArrow: {
-    fontSize: 34,
-    fontWeight: '700',
-  },
-  footer: {
-    alignItems: 'center',
-    marginTop: 'auto',
-    paddingTop: 24,
-    borderTopWidth: 1,
-  },
-  footerText: {
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0,
+    fontWeight: '800',
+    fontFamily: Platform.OS === 'ios' ? 'Avenir Next' : 'sans-serif',
   },
 });

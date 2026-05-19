@@ -1,12 +1,12 @@
 export const COLORS = {
   light: {
-    background: '#F4EFE7',
-    card: '#FFFCF7',
-    text: '#211A14',
-    muted: '#796C5F',
-    border: '#DDD0BF',
-    accent: '#A76D2A',
-    surface: '#ECE2D3',
+    background: '#FFF9EC',
+    card: '#FFF3DC',
+    text: '#2A211D',
+    muted: '#7A625B',
+    border: '#FF8CA1',
+    accent: '#FF244F',
+    surface: '#FFFDF6',
   },
   dark: {
     background: '#16130F',

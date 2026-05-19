@@ -48,7 +48,7 @@ export const useCafeFlowStore = create<CafeFlowStore>((set, get) => ({
   currentTableNumber: null,
   allOrders: [],
   tempCartItems: [],
-  theme: 'dark',
+  theme: 'light',
 
   // Servant action: Set user role
   setRole: (role: UserRole | null) => {
