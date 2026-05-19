@@ -8,20 +8,11 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
-  Alert,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useRouter } from 'expo-router';
-import {
-  Button,
-  Card,
-  Badge,
-  SectionHeader,
-  QuantitySelector,
-  NavBar,
-} from '../../src/components/UIComponents';
 import { useCafeFlowStore } from '../../src/store/cafeFlow';
 import {
   MENU_ITEMS,
@@ -31,6 +22,16 @@ import {
 import { MenuItem } from '../../src/types';
 import { formatCurrency } from '../../src/utils/helpers';
 import { COLORS } from '../../src/constants/theme';
+
+const PAPER = '#F7E9CF';
+const TEA_BROWN = '#4B2B1A';
+const INK = '#17120D';
+const ORANGE = '#F26B2A';
+const DRINK_SECTIONS = [
+  { title: 'Lime', prefix: 'lime_' },
+  { title: 'Mojito', prefix: 'mojito_' },
+  { title: 'Soda', prefix: 'soda_' },
+];
 
 interface VariantModalState {
   visible: boolean;
@@ -44,8 +45,7 @@ interface VariantModalState {
  */
 export default function MenuScreen() {
   const router = useRouter();
-  const { addItemToCart, tempCartItems, submitOrder, currentTableNumber, selectTable, theme, setRole } =
-    useCafeFlowStore();
+  const { addItemToCart, tempCartItems, currentTableNumber, theme } = useCafeFlowStore();
   
   const t = COLORS[theme];
 
@@ -57,21 +57,11 @@ export default function MenuScreen() {
     selectedVariantId: null,
   });
   
-  const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to end your session?', [
-      { text: 'Cancel', style: 'cancel' },
-      { 
-        text: 'Logout', 
-        style: 'destructive',
-        onPress: () => {
-          setRole(null);
-          router.replace('/');
-        }
-      },
-    ]);
-  };
-
   const categoryItems = getMenuItemsByCategory(selectedCategory);
+  const drinkSections = DRINK_SECTIONS.map((section) => ({
+    ...section,
+    items: categoryItems.filter((item) => item.id.startsWith(section.prefix)),
+  })).filter((section) => section.items.length > 0);
 
   const handleSelectItem = (menuItem: MenuItem) => {
     const firstVariant = menuItem.variants[0];
@@ -108,110 +98,84 @@ export default function MenuScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: t.background }]}>
-      
-      {/* Dynamic Header */}
-
-      <NavBar 
-        title="Menu" 
-        subtitle={currentTableNumber ? `Table ${currentTableNumber}` : 'Select Table'} 
-        onLogout={handleLogout}
-        showBack={true}
-        rightComponent={
-          <TouchableOpacity 
-            style={[styles.cartIconBtn, { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)' }]}
-            onPress={() => router.push('/servant/order-summary')}
-          >
-            <Text style={[styles.cartIconText, { color: theme === 'dark' ? '#121212' : '#ffffff' }]}>C</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.frame}>
+        <View style={styles.topBar}>
+          <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/servant')} style={styles.backButton}>
+            <Text style={styles.backText}>‹</Text>
+          </TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/servant/order-summary')} style={styles.cartIconBtn}>
+            <Text style={styles.cartIconText}>C</Text>
             {tempCartItems.length > 0 && (
               <View style={styles.cartBadge}>
                 <Text style={styles.cartBadgeText}>{tempCartItems.length}</Text>
               </View>
             )}
           </TouchableOpacity>
-        }
-      />
+        </View>
 
-      {/* Category Selection Chips */}
-      <View style={[styles.categoryWrapper, { backgroundColor: t.card }]}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryContent}>
+        <View style={styles.heroBlock}>
+          <Text style={styles.heroTitle}>Menu</Text>
+          <Text style={styles.heroSubtitle}>{currentTableNumber ? `Table ${currentTableNumber}` : 'Select a table'} · choose items</Text>
+        </View>
+
+        <View style={styles.categoryWrapper}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryContent}>
           {MENU_CATEGORIES.map((category) => (
             <TouchableOpacity
               key={category.id}
               onPress={() => setSelectedCategory(category.id)}
               style={[
                 styles.categoryChip,
-                { backgroundColor: t.surface },
-                selectedCategory === category.id && [styles.activeCategoryChip, { backgroundColor: t.accent }],
+                selectedCategory === category.id && styles.activeCategoryChip,
               ]}
             >
               <Text
                 style={[
                   styles.categoryChipText,
-                  { color: t.muted },
-                  selectedCategory === category.id && [styles.activeCategoryChipText, { color: '#121212' }],
+                  selectedCategory === category.id && styles.activeCategoryChipText,
                 ]}
               >
                 {category.label}
               </Text>
             </TouchableOpacity>
           ))}
+          </ScrollView>
+        </View>
+
+        <ScrollView style={styles.itemsScroll} contentContainerStyle={styles.itemsScrollContent}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{MENU_CATEGORIES.find((c) => c.id === selectedCategory)?.label || 'Menu'}</Text>
+            <Text style={styles.sectionSubtitle}>Hand-picked favorites</Text>
+          </View>
+
+          <View style={styles.itemsContainer}>
+            {selectedCategory === 'cold_drinks'
+              ? drinkSections.map((section) => (
+                  <View key={section.title} style={styles.drinkSection}>
+                    <Text style={styles.drinkSectionTitle}>{section.title}</Text>
+                    {section.items.map((item) => (
+                      <MenuItemRow key={item.id} item={item} onPress={() => handleSelectItem(item)} />
+                    ))}
+                  </View>
+                ))
+              : categoryItems.map((item) => <MenuItemRow key={item.id} item={item} onPress={() => handleSelectItem(item)} />)}
+          </View>
         </ScrollView>
       </View>
-
-      {/* Main Menu List */}
-      <ScrollView 
-        style={styles.itemsScroll}
-        contentContainerStyle={{ paddingBottom: 150 }}
-      >
-        <SectionHeader
-          title={MENU_CATEGORIES.find((c) => c.id === selectedCategory)?.label || 'Menu'}
-          subtitle="Hand-picked favorites"
-        />
-
-        <View style={styles.itemsContainer}>
-          {categoryItems.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              onPress={() => handleSelectItem(item)}
-              activeOpacity={0.9}
-            >
-              <Card style={styles.itemCard}>
-                <View style={styles.itemCardContent}>
-                  <View style={[styles.itemImageContainer, { backgroundColor: t.surface }]}>
-                    {item.image ? (
-                      <Image source={item.image} style={styles.itemImage} resizeMode="cover" />
-                    ) : (
-                      <Text style={styles.itemEmoji}>☕</Text>
-                    )}
-                  </View>
-                  <View style={styles.itemInfo}>
-                    <Text style={[styles.itemName, { color: t.text }]}>{item.name}</Text>
-                    <Text style={[styles.itemPriceLabel, { color: t.muted }]}>Starting from</Text>
-                    <Text style={[styles.itemPrice, { color: t.accent }]}>{formatCurrency(item.basePrice)}</Text>
-                  </View>
-                  <View style={[styles.addBtnCircle, { backgroundColor: t.accent }]}>
-                    <Text style={[styles.addBtnIcon, { color: '#121212' }]}>+</Text>
-                  </View>
-                </View>
-              </Card>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
 
       {/* Modern Floating Order Bar */}
       {tempCartItems.length > 0 && (
         <View style={styles.floatingCartContainer}>
           <TouchableOpacity 
-             style={[styles.floatingCartBtn, { backgroundColor: theme === 'dark' ? t.accent : '#111827' }]}
+             style={styles.floatingCartBtn}
              onPress={() => router.push('/servant/order-summary')}
           >
-            <View style={[styles.cartCountCircle, { backgroundColor: theme === 'dark' ? '#121212' : t.accent }]}>
-              <Text style={[styles.cartCountText, { color: theme === 'dark' ? t.accent : '#FFF' }]}>{tempCartItems.length}</Text>
+            <View style={styles.cartCountCircle}>
+              <Text style={styles.cartCountText}>{tempCartItems.length}</Text>
             </View>
-            <Text style={[styles.cartBtnText, { color: theme === 'dark' ? '#121212' : '#FFF' }]}>View Order Summary</Text>
-            <Text style={[styles.cartBtnPrice, { color: theme === 'dark' ? '#121212' : '#FFF' }]}>
+            <Text style={styles.cartBtnText}>View Order Summary</Text>
+            <Text style={styles.cartBtnPrice}>
               {formatCurrency(tempCartItems.reduce((sum, item) => sum + item.totalPrice, 0))}
             </Text>
           </TouchableOpacity>
@@ -312,54 +276,94 @@ export default function MenuScreen() {
   );
 }
 
+function MenuItemRow({ item, onPress }: { item: MenuItem; onPress: () => void }) {
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.9} style={styles.itemCard}>
+      <View style={styles.itemCardContent}>
+        <View style={styles.itemImageContainer}>
+          {item.image ? (
+            <Image source={item.image} style={styles.itemImage} resizeMode="cover" />
+          ) : (
+            <Text style={styles.itemEmoji}>☕</Text>
+          )}
+        </View>
+        <View style={styles.itemInfo}>
+          <Text style={styles.itemName}>{item.name}</Text>
+          <Text style={styles.itemPriceLabel}>Starting from</Text>
+          <Text style={styles.itemPrice}>{formatCurrency(item.basePrice)}</Text>
+        </View>
+        <View style={styles.addBtnCircle}>
+          <Text style={styles.addBtnIcon}>+</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAF9',
+    backgroundColor: PAPER,
   },
-  header: {
-    backgroundColor: '#FFF',
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth:1,
-    borderBottomColor:'#F3F4F6'
+  frame: {
+    flex: 1,
+    overflow: 'hidden',
+    backgroundColor: PAPER,
+    borderWidth: 1.4,
+    borderColor: INK,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+  topBar: {
+    height: 78,
+    borderBottomWidth: 1.2,
+    borderColor: INK,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backArrow: {
-    fontSize: 20,
-    color: '#111827',
-  },
-  headerTitleContainer: {
+  backButton: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 54,
+    borderRightWidth: 1.2,
+    borderColor: INK,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  headerTitle: {
+  backText: {
+    color: INK,
+    fontSize: 32,
+    lineHeight: 34,
+  },
+  heroBlock: {
+    height: 118,
+    backgroundColor: TEA_BROWN,
+    borderBottomWidth: 1.2,
+    borderColor: INK,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  heroTitle: {
+    color: PAPER,
     fontSize: 24,
     fontWeight: '900',
-    color: '#111827',
-    fontStyle: 'italic',
-    letterSpacing: -0.5,
+    letterSpacing: 1,
   },
-
-  headerSubtitle: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '600',
+  heroSubtitle: {
+    marginTop: 5,
+    color: 'rgba(247, 233, 207, 0.72)',
+    fontSize: 11,
+    fontWeight: '800',
   },
   cartIconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#ECFDF5',
+    position: 'absolute',
+    right: 14,
+    bottom: 13,
+    width: 38,
+    height: 38,
+    borderWidth: 1.2,
+    borderColor: INK,
+    backgroundColor: PAPER,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -368,55 +372,104 @@ const styles = StyleSheet.create({
   },
   cartBadge: {
     position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: '#EF4444',
+    top: -7,
+    right: -7,
+    backgroundColor: ORANGE,
     width: 20,
     height: 20,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFF',
+    borderWidth: 1,
+    borderColor: INK,
   },
   cartBadgeText: {
-    color: '#FFF',
+    color: INK,
     fontSize: 10,
     fontWeight: '900',
   },
   categoryWrapper: {
-    backgroundColor: '#FFF',
-    paddingVertical: 12,
+    paddingTop: 18,
+    marginBottom: -1.2,
+    zIndex: 2,
   },
   categoryContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
+    alignItems: 'flex-end',
   },
   categoryChip: {
+    minHeight: 42,
     paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-    backgroundColor: '#F3F4F6',
-    marginRight: 10,
+    paddingHorizontal: 16,
+    borderWidth: 1.2,
+    borderBottomWidth: 0,
+    borderColor: INK,
+    borderTopLeftRadius: 9,
+    borderTopRightRadius: 9,
+    backgroundColor: '#F1DFC0',
+    marginRight: 6,
   },
   activeCategoryChip: {
-    backgroundColor: '#111827',
+    backgroundColor: TEA_BROWN,
   },
   categoryChipText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#6B7280',
+    fontSize: 11,
+    fontWeight: '900',
+    color: INK,
+    letterSpacing: 0.5,
   },
   activeCategoryChipText: {
-    color: '#FFF',
+    color: PAPER,
   },
   itemsScroll: {
     flex: 1,
   },
+  itemsScrollContent: {
+    paddingBottom: 150,
+  },
+  sectionHeader: {
+    marginHorizontal: 24,
+    padding: 14,
+    borderWidth: 1.2,
+    borderColor: INK,
+    backgroundColor: PAPER,
+  },
+  sectionTitle: {
+    color: INK,
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  sectionSubtitle: {
+    marginTop: 3,
+    color: INK,
+    fontSize: 10,
+    fontWeight: '800',
+    opacity: 0.55,
+  },
   itemsContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
+    paddingTop: 14,
+  },
+  drinkSection: {
+    marginBottom: 18,
+  },
+  drinkSectionTitle: {
+    marginBottom: 10,
+    paddingBottom: 8,
+    borderBottomWidth: 1.1,
+    borderColor: INK,
+    color: INK,
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 0.9,
   },
   itemCard: {
     marginBottom: 12,
+    padding: 12,
+    borderWidth: 1.2,
+    borderColor: INK,
+    backgroundColor: '#FFF2D8',
   },
   itemCardContent: {
     flexDirection: 'row',
@@ -425,8 +478,9 @@ const styles = StyleSheet.create({
   itemImageContainer: {
     width: 80,
     height: 80,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    borderWidth: 1.1,
+    borderColor: INK,
+    backgroundColor: PAPER,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
@@ -445,28 +499,29 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#111827',
+    color: INK,
   },
   itemPriceLabel: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: INK,
     marginTop: 2,
   },
   itemPrice: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#059669',
+    color: TEA_BROWN,
   },
   addBtnCircle: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: '#059669',
+    backgroundColor: ORANGE,
+    borderWidth: 1.1,
+    borderColor: INK,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addBtnIcon: {
-    color: '#FFF',
+    color: INK,
     fontSize: 20,
     fontWeight: '700',
   },
@@ -477,40 +532,38 @@ const styles = StyleSheet.create({
     right: 20,
   },
   floatingCartBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: TEA_BROWN,
     height: 65,
-    borderRadius: 35,
+    borderWidth: 1.2,
+    borderColor: INK,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 10,
   },
   cartCountCircle: {
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#059669',
+    backgroundColor: ORANGE,
+    borderWidth: 1,
+    borderColor: INK,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cartCountText: {
-    color: '#FFF',
+    color: INK,
     fontSize: 14,
     fontWeight: '900',
   },
   cartBtnText: {
     flex: 1,
     marginLeft: 15,
-    color: '#FFF',
+    color: PAPER,
     fontSize: 16,
     fontWeight: '800',
   },
   cartBtnPrice: {
-    color: '#FFF',
+    color: PAPER,
     fontSize: 18,
     fontWeight: '900',
   },

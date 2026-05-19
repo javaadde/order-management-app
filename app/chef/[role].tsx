@@ -90,6 +90,10 @@ export default function ChefPanel() {
     ]);
   };
 
+  if (chefRole === 'chef_a') {
+    return <TeaMakerPanel />;
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: t.background }]}>
       {/* Texture Overlay */}
@@ -275,7 +279,392 @@ export default function ChefPanel() {
   );
 }
 
+function TeaMakerPanel() {
+  const router = useRouter();
+  const { allOrders, getOrdersForChef, updateItemStatus } = useCafeFlowStore();
+  const [activeFolder, setActiveFolder] = React.useState<'orders' | 'making' | 'ready'>('orders');
+  const teaTickets = useMemo(() => {
+    return getOrdersForChef('chef_a').flatMap((order) =>
+      order.items
+        .filter((item) => item.assignedChef === 'chef_a')
+        .map((item) => ({
+          orderId: order.id,
+          tableNumber: order.tableNumber,
+          item,
+        }))
+    );
+  }, [allOrders, getOrdersForChef]);
+
+  const pendingTickets = teaTickets.filter((ticket) => ticket.item.status === 'pending');
+  const makingTickets = teaTickets.filter((ticket) => ticket.item.status === 'preparing');
+  const readyTickets = teaTickets.filter((ticket) => ticket.item.status === 'ready');
+  const activeFolderConfig = {
+    orders: {
+      title: 'Orders',
+      count: pendingTickets.length,
+      tickets: pendingTickets,
+      emptyText: 'No new tea orders',
+      buttonLabel: 'Start making',
+      onAdvance: (orderId: string, itemId: string) => updateItemStatus(orderId, itemId, 'preparing'),
+    },
+    making: {
+      title: 'Making',
+      count: makingTickets.length,
+      tickets: makingTickets,
+      emptyText: 'Nothing brewing now',
+      buttonLabel: 'Move to ready',
+      onAdvance: (orderId: string, itemId: string) => updateItemStatus(orderId, itemId, 'ready'),
+    },
+    ready: {
+      title: 'Ready',
+      count: readyTickets.length,
+      tickets: readyTickets,
+      emptyText: 'Ready list is empty',
+      buttonLabel: undefined,
+      onAdvance: undefined,
+    },
+  }[activeFolder];
+
+  return (
+    <SafeAreaView style={styles.teaMakerScreen}>
+      <View style={styles.teaMakerFrame}>
+        <View style={styles.teaMakerTopBar}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Open user profile"
+            activeOpacity={0.72}
+            onPress={() => router.push('/chef/tea-maker-profile')}
+            style={styles.teaMakerUserButton}
+          >
+            <View style={styles.teaMakerUserHead} />
+            <View style={styles.teaMakerUserBody} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.teaMakerHeroBlock}>
+          <Text style={styles.teaBoardTitle}>Tea Orders</Text>
+          <Text style={styles.teaBoardSubtitle}>Move each cup from order to making to ready</Text>
+        </View>
+        <View style={styles.teaMakerPaper}>
+          <View style={styles.teaFolderTabs}>
+            {([
+              ['orders', 'Orders', pendingTickets.length],
+              ['making', 'Making', makingTickets.length],
+              ['ready', 'Ready', readyTickets.length],
+            ] as const).map(([folder, label, count]) => {
+              const isActive = activeFolder === folder;
+
+              return (
+                <TouchableOpacity
+                  key={folder}
+                  accessibilityRole="button"
+                  activeOpacity={0.82}
+                  onPress={() => setActiveFolder(folder)}
+                  style={[styles.teaFolderTab, isActive && styles.activeTeaFolderTab]}
+                >
+                  <Text style={[styles.teaFolderTabText, isActive && styles.activeTeaFolderTabText]}>{label}</Text>
+                  <Text style={[styles.teaFolderCount, isActive && styles.activeTeaFolderCount]}>{count}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <View style={[styles.teaFolderPanel, activeFolderConfig.tickets.length === 0 && styles.emptyTeaFolderPanel]}>
+            <View style={styles.teaFolderPanelHeader}>
+              <Text style={styles.teaFolderPanelTitle}>{activeFolderConfig.title}</Text>
+              <Text style={styles.teaFolderPanelMeta}>{activeFolderConfig.count} tickets</Text>
+            </View>
+            <TeaStatusColumn
+              tickets={activeFolderConfig.tickets}
+              emptyText={activeFolderConfig.emptyText}
+              buttonLabel={activeFolderConfig.buttonLabel}
+              onAdvance={activeFolderConfig.onAdvance}
+            />
+          </View>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+function TeaStatusColumn({
+  tickets,
+  emptyText,
+  buttonLabel,
+  onAdvance,
+}: {
+  tickets: Array<{
+    orderId: string;
+    tableNumber: number;
+    item: {
+      id: string;
+      menuItemName: string;
+      variantName: string;
+      quantity: number;
+    };
+  }>;
+  emptyText: string;
+  buttonLabel?: string;
+  onAdvance?: (orderId: string, itemId: string) => void;
+}) {
+  return (
+    <View style={[styles.teaFolderListWrap, tickets.length === 0 && styles.emptyTeaFolderListWrap]}>
+      <ScrollView contentContainerStyle={styles.teaFolderList} showsVerticalScrollIndicator={false}>
+        {tickets.length === 0 ? (
+          <Text style={styles.teaEmptyText}>{emptyText}</Text>
+        ) : (
+          tickets.map((ticket) => (
+            <View key={`${ticket.orderId}-${ticket.item.id}`} style={styles.teaTicketCard}>
+              <View style={styles.teaTicketTopLine}>
+                <Text style={styles.teaTicketTable}>T{ticket.tableNumber}</Text>
+                <Text style={styles.teaTicketQty}>x{ticket.item.quantity}</Text>
+              </View>
+              <Text style={styles.teaTicketName}>{ticket.item.menuItemName}</Text>
+              <Text style={styles.teaTicketVariant}>{ticket.item.variantName}</Text>
+              {buttonLabel && onAdvance ? (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  activeOpacity={0.78}
+                  onPress={() => onAdvance(ticket.orderId, ticket.item.id)}
+                  style={styles.teaTicketButton}
+                >
+                  <Text style={styles.teaTicketButtonText}>{buttonLabel}</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ))
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  teaMakerScreen: {
+    flex: 1,
+    backgroundColor: '#F7E9CF',
+  },
+  teaMakerFrame: {
+    flex: 1,
+    overflow: 'hidden',
+    backgroundColor: '#F7E9CF',
+    borderWidth: 1.4,
+    borderColor: '#17120D',
+  },
+  teaMakerTopBar: {
+    height: 78,
+    borderBottomWidth: 1.2,
+    borderColor: '#17120D',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  teaMakerUserButton: {
+    position: 'absolute',
+    right: 14,
+    bottom: 13,
+    width: 38,
+    height: 38,
+    borderWidth: 1.2,
+    borderColor: '#17120D',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F7E9CF',
+  },
+  teaMakerUserHead: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.6,
+    borderColor: '#17120D',
+  },
+  teaMakerUserBody: {
+    width: 21,
+    height: 11,
+    marginTop: 3,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    borderWidth: 1.6,
+    borderBottomWidth: 0,
+    borderColor: '#17120D',
+  },
+  teaMakerHeroBlock: {
+    height: 118,
+    backgroundColor: '#4B2B1A',
+    borderBottomWidth: 1.2,
+    borderColor: '#17120D',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  teaMakerPaper: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 36,
+  },
+  teaBoardTitle: {
+    color: '#F7E9CF',
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  teaBoardSubtitle: {
+    marginTop: 5,
+    color: 'rgba(247, 233, 207, 0.72)',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  teaFolderTabs: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginBottom: -1.2,
+    zIndex: 2,
+  },
+  teaFolderTab: {
+    minWidth: 92,
+    height: 46,
+    marginRight: 5,
+    paddingHorizontal: 12,
+    borderWidth: 1.2,
+    borderBottomWidth: 0,
+    borderColor: '#17120D',
+    borderTopLeftRadius: 9,
+    borderTopRightRadius: 9,
+    backgroundColor: '#F1DFC0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeTeaFolderTab: {
+    height: 52,
+    backgroundColor: '#4B2B1A',
+  },
+  teaFolderTabText: {
+    color: '#17120D',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  activeTeaFolderTabText: {
+    color: '#F7E9CF',
+  },
+  teaFolderCount: {
+    marginTop: 2,
+    color: '#17120D',
+    fontSize: 9,
+    fontWeight: '900',
+    opacity: 0.58,
+  },
+  activeTeaFolderCount: {
+    color: '#F7E9CF',
+  },
+  teaFolderPanel: {
+    maxHeight: '100%',
+    borderWidth: 1.2,
+    borderColor: '#17120D',
+    backgroundColor: '#F7E9CF',
+    padding: 14,
+    paddingBottom: 12,
+  },
+  emptyTeaFolderPanel: {
+    paddingBottom: 20,
+  },
+  teaFolderPanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+    borderBottomWidth: 1.1,
+    borderColor: '#17120D',
+  },
+  teaFolderPanelTitle: {
+    color: '#17120D',
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 0.9,
+  },
+  teaFolderPanelMeta: {
+    color: '#17120D',
+    fontSize: 10,
+    fontWeight: '900',
+    opacity: 0.56,
+  },
+  teaFolderListWrap: {
+    maxHeight: 430,
+  },
+  emptyTeaFolderListWrap: {
+    maxHeight: 92,
+  },
+  teaFolderList: {
+    paddingTop: 12,
+    paddingBottom: 6,
+  },
+  teaEmptyText: {
+    paddingTop: 24,
+    paddingBottom: 14,
+    color: '#17120D',
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '900',
+    opacity: 0.46,
+  },
+  teaTicketCard: {
+    marginBottom: 10,
+    padding: 12,
+    borderWidth: 1.1,
+    borderColor: '#17120D',
+    backgroundColor: '#FFF2D8',
+  },
+  teaTicketTopLine: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  teaTicketTable: {
+    color: '#17120D',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  teaTicketQty: {
+    color: '#4B2B1A',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  teaTicketName: {
+    marginTop: 8,
+    color: '#17120D',
+    fontSize: 15,
+    lineHeight: 19,
+    fontWeight: '900',
+  },
+  teaTicketVariant: {
+    marginTop: 2,
+    color: '#17120D',
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '800',
+    opacity: 0.62,
+  },
+  teaTicketButton: {
+    minHeight: 36,
+    marginTop: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F26B2A',
+    borderWidth: 1,
+    borderColor: '#17120D',
+  },
+  teaTicketButtonText: {
+    color: '#17120D',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  teaMakerRule: {
+    height: 1.2,
+    marginBottom: 46,
+    backgroundColor: '#17120D',
+    opacity: 0.72,
+  },
+  teaMakerShortRule: {
+    width: '72%',
+  },
   container: {
     flex: 1,
   },
@@ -538,4 +927,3 @@ const styles = StyleSheet.create({
     height: 120,
   },
 });
-

@@ -22,11 +22,13 @@ export default function RootLayout() {
 
         {/* Servant Panel */}
         <Stack.Screen name="servant/index" />
+        <Stack.Screen name="servant/profile" />
         <Stack.Screen name="servant/menu" />
         <Stack.Screen name="servant/order-summary" />
 
         {/* Chef Panels */}
         <Stack.Screen name="chef/[role]" />
+        <Stack.Screen name="chef/tea-maker-profile" />
 
         {/* Admin Panel */}
         <Stack.Screen name="admin/index" />

@@ -2,7 +2,6 @@ import React, { useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
-  Easing,
   ImageBackground,
   PanResponder,
   StyleSheet,
@@ -17,6 +16,7 @@ const PEACH = '#F2D5B8';
 const INK = '#2A1B13';
 const GOLD = '#B78321';
 const SWIPE_THRESHOLD = 48;
+const INDICATOR_STEP = 54;
 const { width } = Dimensions.get('window');
 
 type LoginRole = 'teaMaker' | 'servant' | 'chef';
@@ -47,24 +47,39 @@ export default function LoginScreen() {
   const [previousLoginRole, setPreviousLoginRole] = useState<LoginRole | null>(null);
   const transition = useRef(new Animated.Value(1)).current;
   const indicatorPosition = useRef(new Animated.Value(0)).current;
+  const iconPop = useRef(new Animated.Value(1)).current;
+  const dragX = useRef(new Animated.Value(0)).current;
   const direction = useRef(1);
+
+  const resetSwipe = () => {
+    Animated.spring(dragX, {
+      toValue: 0,
+      damping: 13,
+      stiffness: 130,
+      mass: 0.8,
+      useNativeDriver: true,
+    }).start();
+  };
 
   const switchLoginRole = (nextRole: LoginRole) => {
     if (nextRole === loginRole) return;
 
     const nextIndex = roleOrder.indexOf(nextRole);
     const currentIndex = roleOrder.indexOf(loginRole);
-    direction.current = nextIndex > currentIndex ? 1 : -1;
+    direction.current = nextIndex > currentIndex ? -1 : 1;
 
     setPreviousLoginRole(loginRole);
     setLoginRole(nextRole);
     transition.setValue(0);
+    iconPop.setValue(0.72);
+    dragX.setValue(0);
 
     Animated.parallel([
-      Animated.timing(transition, {
+      Animated.spring(transition, {
         toValue: 1,
-        duration: 360,
-        easing: Easing.out(Easing.cubic),
+        damping: 16,
+        stiffness: 120,
+        mass: 0.9,
         useNativeDriver: true,
       }),
       Animated.spring(indicatorPosition, {
@@ -74,22 +89,56 @@ export default function LoginScreen() {
         mass: 0.75,
         useNativeDriver: true,
       }),
+      Animated.sequence([
+        Animated.spring(iconPop, {
+          toValue: 1.18,
+          damping: 8,
+          stiffness: 210,
+          mass: 0.55,
+          useNativeDriver: true,
+        }),
+        Animated.spring(iconPop, {
+          toValue: 1,
+          damping: 9,
+          stiffness: 170,
+          mass: 0.55,
+          useNativeDriver: true,
+        }),
+      ]),
     ]).start(() => setPreviousLoginRole(null));
   };
 
   const panResponder = PanResponder.create({
     onMoveShouldSetPanResponder: (_, gestureState) =>
       Math.abs(gestureState.dx) > 12 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
+    onMoveShouldSetPanResponderCapture: (_, gestureState) =>
+      Math.abs(gestureState.dx) > 12 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
+    onShouldBlockNativeResponder: () => true,
+    onPanResponderMove: (_, gestureState) => {
+      const clampedDx = Math.max(Math.min(gestureState.dx, width * 0.32), -width * 0.32);
+      dragX.setValue(clampedDx);
+    },
     onPanResponderRelease: (_, gestureState) => {
       const currentIndex = roleOrder.indexOf(loginRole);
 
       if (gestureState.dx > SWIPE_THRESHOLD) {
-        switchLoginRole(roleOrder[Math.min(currentIndex + 1, roleOrder.length - 1)]);
+        const nextIndex = Math.max(currentIndex - 1, 0);
+        if (nextIndex === currentIndex) resetSwipe();
+        else switchLoginRole(roleOrder[nextIndex]);
+        return;
       }
 
       if (gestureState.dx < -SWIPE_THRESHOLD) {
-        switchLoginRole(roleOrder[Math.max(currentIndex - 1, 0)]);
+        const nextIndex = Math.min(currentIndex + 1, roleOrder.length - 1);
+        if (nextIndex === currentIndex) resetSwipe();
+        else switchLoginRole(roleOrder[nextIndex]);
+        return;
       }
+
+      resetSwipe();
+    },
+    onPanResponderTerminate: () => {
+      resetSwipe();
     },
   });
 
@@ -120,17 +169,62 @@ export default function LoginScreen() {
     inputRange: [0, 1],
     outputRange: [direction.current * width * 0.18, 0],
   });
+  const incomingScale = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.94, 1],
+  });
+  const incomingOpacity = transition.interpolate({
+    inputRange: [0, 0.42, 1],
+    outputRange: [0.22, 0.72, 1],
+  });
+  const incomingRotate = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [`${direction.current * 2.8}deg`, '0deg'],
+  });
   const outgoingTranslateX = transition.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -direction.current * width * 0.18],
+    outputRange: [0, -direction.current * width * 0.26],
   });
   const outgoingOpacity = transition.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 0],
+    outputRange: [1, 0.08],
+  });
+  const outgoingScale = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.92],
+  });
+  const outgoingRotate = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', `${-direction.current * 4}deg`],
   });
   const indicatorTranslateX = indicatorPosition.interpolate({
     inputRange: [0, 1, 2],
-    outputRange: [0, 54, 108],
+    outputRange: [0, INDICATOR_STEP, INDICATOR_STEP * 2],
+  });
+  const swipeTranslateX = dragX.interpolate({
+    inputRange: [-width * 0.32, width * 0.32],
+    outputRange: [-width * 0.075, width * 0.075],
+    extrapolate: 'clamp',
+  });
+  const swipeScale = dragX.interpolate({
+    inputRange: [-width * 0.32, 0, width * 0.32],
+    outputRange: [0.985, 1, 0.985],
+    extrapolate: 'clamp',
+  });
+  const swipeRotate = dragX.interpolate({
+    inputRange: [-width * 0.32, width * 0.32],
+    outputRange: ['-2.4deg', '2.4deg'],
+    extrapolate: 'clamp',
+  });
+  const leftGlowOpacity = dragX.interpolate({
+    inputRange: [0, width * 0.32],
+    outputRange: [0, 0.42],
+    extrapolate: 'clamp',
+  });
+  const rightGlowOpacity = dragX.interpolate({
+    inputRange: [-width * 0.32, 0],
+    outputRange: [0.42, 0],
+    extrapolate: 'clamp',
   });
 
   return (
@@ -141,7 +235,14 @@ export default function LoginScreen() {
           style={[
             styles.backgroundImage,
             styles.layeredImage,
-            { opacity: outgoingOpacity, transform: [{ translateX: outgoingTranslateX }] },
+            {
+              opacity: outgoingOpacity,
+              transform: [
+                { translateX: outgoingTranslateX },
+                { scale: outgoingScale },
+                { rotate: outgoingRotate },
+              ],
+            },
           ]}
           resizeMode="cover"
         />
@@ -152,15 +253,28 @@ export default function LoginScreen() {
         style={[
           styles.backgroundImage,
           styles.layeredImage,
-          { transform: [{ translateX: previousScreen ? incomingTranslateX : 0 }] },
+          {
+            opacity: previousScreen ? incomingOpacity : 1,
+            transform: [
+              { translateX: previousScreen ? incomingTranslateX : swipeTranslateX },
+              { scale: previousScreen ? incomingScale : swipeScale },
+              { rotate: previousScreen ? incomingRotate : swipeRotate },
+            ],
+          },
         ]}
         resizeMode="cover"
       />
 
+      <Animated.View pointerEvents="none" style={[styles.leftSwipeGlow, { opacity: leftGlowOpacity }]} />
+      <Animated.View pointerEvents="none" style={[styles.rightSwipeGlow, { opacity: rightGlowOpacity }]} />
+
       <View style={styles.roleIndicator}>
         <Animated.View
           pointerEvents="none"
-          style={[styles.activeRoleHighlight, { transform: [{ translateX: indicatorTranslateX }] }]}
+          style={[
+            styles.activeRoleHighlight,
+            { transform: [{ translateX: indicatorTranslateX }, { scale: iconPop }] },
+          ]}
         />
         {roleOrder.map((role) => (
           <TouchableOpacity
@@ -236,6 +350,26 @@ const styles = StyleSheet.create({
   layeredImage: {
     backgroundColor: PEACH,
   },
+  leftSwipeGlow: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: 86,
+    backgroundColor: 'rgba(255, 226, 173, 0.7)',
+    borderTopRightRadius: 120,
+    borderBottomRightRadius: 120,
+  },
+  rightSwipeGlow: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: 86,
+    backgroundColor: 'rgba(255, 226, 173, 0.7)',
+    borderTopLeftRadius: 120,
+    borderBottomLeftRadius: 120,
+  },
   roleIndicator: {
     position: 'absolute',
     left: '50%',
@@ -254,11 +388,11 @@ const styles = StyleSheet.create({
   },
   activeRoleHighlight: {
     position: 'absolute',
-    left: 16,
-    top: 4,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    left: 13,
+    top: 1,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: '#F5D8B7',
     borderWidth: 1,
     borderColor: GOLD,
