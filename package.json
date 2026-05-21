@@ -2,9 +2,13 @@
   "name": "the-black-tea",
   "version": "1.0.0",
   "main": "expo-router/entry",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "start": "expo start",
     "server": "node server/index.js",
+    "render:start": "node server/index.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web"
