@@ -1,461 +1,199 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
-
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { useRouter } from 'expo-router';
-import { Button, Card, SectionHeader, NavBar } from '../../src/components/UIComponents';
 import { useCafeFlowStore } from '../../src/store/cafeFlow';
 import { formatCurrency } from '../../src/utils/helpers';
-import { COLORS } from '../../src/constants/theme';
 
-/**
- * Order Summary Screen
- * Review before submitting to kitchen
- */
+const PAPER = '#F7E9CF';
+const TEA_BROWN = '#4B2B1A';
+const INK = '#17120D';
+const ORANGE = '#F26B2A';
+const TABLE_NAMES: Record<number, string> = {
+  1: 'bc',
+  2: 'tc',
+  3: 'cntr',
+  4: 'lc',
+  5: 'mj(majlis)',
+  6: 'dw-r',
+  7: 'dw-l',
+  8: 'dw-c',
+};
+
 export default function OrderSummary() {
   const router = useRouter();
-  const { tempCartItems, currentTableNumber, submitOrder, removeItemFromCart, theme, setRole } =
-    useCafeFlowStore();
-  
-  const t = COLORS[theme];
-
-  if (!currentTableNumber || tempCartItems.length === 0) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: t.background }]}>
-        <NavBar 
-          title="Cart" 
-          subtitle="Review Items" 
-          onLogout={() => {
-            setRole(null);
-            router.replace('/');
-          }}
-          showBack={true}
-        />
-        <View style={styles.emptyContainer}>
-
-          <View style={styles.emptyIconCircle}>
-            <Text style={styles.emptyEmoji}>🧺</Text>
-          </View>
-          <Text style={styles.emptyText}>Your cart is empty</Text>
-          <Text style={[styles.emptySubtitle, { color: t.muted }]}>Go back to the menu to add some items</Text>
-          <TouchableOpacity 
-            style={[styles.goBackBtn, { backgroundColor: t.accent }]}
-            onPress={() => router.back()}
-          >
-            <Text style={[styles.goBackText, { color: '#121212' }]}>Back to Menu</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  const handleSubmitOrder = () => {
-    const order = submitOrder();
-    if (order) {
-      Alert.alert(
-        'Order Submitted',
-        `Order successfully sent to the kitchen!`,
-        [
-          {
-            text: 'Great!',
-            onPress: () => router.push('/servant'),
-          },
-        ]
-      );
-    }
-  };
-
-  const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to end your session?', [
-      { text: 'Cancel', style: 'cancel' },
-      { 
-        text: 'Logout', 
-        style: 'destructive',
-        onPress: () => {
-          setRole(null);
-          router.replace('/');
-        }
-      },
-    ]);
-  };
+  const { tempCartItems, currentTableNumber, submitOrder, removeItemFromCart } = useCafeFlowStore();
 
   const totalPrice = tempCartItems.reduce((sum, item) => sum + item.totalPrice, 0);
-
-  // Group items by chef for display
+  const tableLabel = currentTableNumber ? `Table (${TABLE_NAMES[currentTableNumber] ?? currentTableNumber})` : 'No table';
   const itemsByChef = tempCartItems.reduce(
     (acc, item) => {
-      if (!acc[item.assignedChef]) {
-        acc[item.assignedChef] = [];
-      }
+      if (!acc[item.assignedChef]) acc[item.assignedChef] = [];
       acc[item.assignedChef].push(item);
       return acc;
     },
     {} as Record<string, typeof tempCartItems>
   );
 
+  const handleSubmitOrder = () => {
+    const order = submitOrder();
+    if (!order) return;
+
+    Alert.alert('Order Submitted', 'Order successfully sent to the kitchen!', [
+      { text: 'Great!', onPress: () => router.push('/servant') },
+    ]);
+  };
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: t.background }]}>
-      
-      {/* Header */}
-
-      <NavBar 
-        title="Review Order" 
-        subtitle={currentTableNumber ? `Table ${currentTableNumber}` : ''} 
-        onLogout={handleLogout}
-        showBack={true}
-      />
-
-      <ScrollView 
-        style={styles.content}
-        contentContainerStyle={{ paddingBottom: 150 }}
-      >
-        {/* Modern Table Banner */}
-        <View style={styles.tableBanner}>
-          <View style={[styles.tableIconCircle, { backgroundColor: t.accent }]}>
-             <Text style={[styles.tableIconText, { color: '#121212' }]}>{currentTableNumber}</Text>
-          </View>
-          <View style={{ marginLeft: 16 }}>
-            <Text style={[styles.tableBannerTitle, { color: t.text }]}>Table {currentTableNumber}</Text>
-            <Text style={[styles.tableBannerSubtitle, { color: t.muted }]}>{tempCartItems.length} items in current order</Text>
-          </View>
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.frame}>
+        <View style={styles.heroBlock}>
+          <TouchableOpacity accessibilityRole="button" onPress={() => router.back()} style={styles.backButton}>
+            <Text style={styles.backText}>‹</Text>
+          </TouchableOpacity>
+          <Text style={styles.heroTitle}>Cart</Text>
+          <Text style={styles.heroSubtitle}>{tableLabel} · review items</Text>
         </View>
 
-        {/* Grouped Tickets */}
-        {Object.entries(itemsByChef).map(([chef, items]) => {
-          const chefNames: Record<string, string> = {
-            chef_a: 'Shigin · Tea Station',
-            chef_b: 'Swadiq · Drinks & Snacks',
-            chef_c: 'Jaslin · Wraps & Specials',
-          };
-
-          return (
-            <View key={chef} style={[styles.chefTicket, { backgroundColor: t.card, borderColor: t.border }]}>
-              <View style={[styles.ticketHeader, { backgroundColor: t.surface, borderBottomColor: t.border }]}>
-                <Text style={[styles.ticketTitle, { color: t.text }]}>{chefNames[chef] || chef}</Text>
-                <View style={[styles.ticketCount, { backgroundColor: t.border }]}>
-                   <Text style={[styles.ticketCountText, { color: t.text }]}>{items.length}</Text>
+        {!currentTableNumber || tempCartItems.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <BasketIcon />
+            <Text style={styles.emptyText}>Your cart is empty</Text>
+            <Text style={styles.emptySubtitle}>Go back to the menu to add some items</Text>
+            <TouchableOpacity style={styles.goBackBtn} onPress={() => router.back()}>
+              <Text style={styles.goBackText}>Back to Menu</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <ScrollView style={styles.content} contentContainerStyle={styles.contentBody}>
+              <View style={styles.tableBanner}>
+                <View style={styles.tableBadge}>
+                  <Text style={styles.tableBadgeText}>{currentTableNumber}</Text>
+                </View>
+                <View>
+                  <Text style={styles.tableTitle}>{tableLabel}</Text>
+                  <Text style={styles.tableSubtitle}>{tempCartItems.length} items in current order</Text>
                 </View>
               </View>
-              
-              <View style={styles.ticketBody}>
-                {items.map((item, idx) => (
-                  <View key={item.id} style={[styles.summaryItem, { borderBottomColor: t.border }, idx === items.length - 1 && { borderBottomWidth: 0 }]}>
-                    <View style={styles.itemInfo}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                         <Text style={[styles.itemQty, { color: t.accent }]}>{item.quantity}x</Text>
-                         <Text style={[styles.itemName, { color: t.text }]}>{item.menuItemName}</Text>
+
+              {Object.entries(itemsByChef).map(([chef, items]) => {
+                const chefNames: Record<string, string> = {
+                  chef_a: 'Tea Station',
+                  chef_b: 'Drinks & Snacks',
+                  chef_c: 'Wraps & Specials',
+                };
+
+                return (
+                  <View key={chef} style={styles.ticket}>
+                    <View style={styles.ticketHeader}>
+                      <Text style={styles.ticketTitle}>{chefNames[chef] || chef}</Text>
+                      <Text style={styles.ticketCount}>{items.length}</Text>
+                    </View>
+                    {items.map((item, index) => (
+                      <View key={item.id} style={[styles.summaryItem, index === items.length - 1 && styles.lastSummaryItem]}>
+                        <View style={styles.itemInfo}>
+                          <Text style={styles.itemName}>{item.quantity}x {item.menuItemName}</Text>
+                          <Text style={styles.itemVariant}>{item.variantName}</Text>
+                        </View>
+                        <View style={styles.itemRight}>
+                          <Text style={styles.itemPrice}>{formatCurrency(item.totalPrice)}</Text>
+                          <TouchableOpacity onPress={() => removeItemFromCart(item.id)}>
+                            <Text style={styles.removeText}>Remove</Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
-                      <Text style={[styles.itemVariant, { color: t.muted }]}>{item.variantName}</Text>
-                    </View>
-                    <View style={styles.itemRight}>
-                      <Text style={[styles.itemPrice, { color: t.text }]}>{formatCurrency(item.totalPrice)}</Text>
-                      <TouchableOpacity 
-                        onPress={() => removeItemFromCart(item.id)}
-                        style={styles.removeBtn}
-                      >
-                         <Text style={styles.removeText}>Remove</Text>
-                      </TouchableOpacity>
-                    </View>
+                    ))}
                   </View>
-                ))}
+                );
+              })}
+
+              <View style={styles.totalCard}>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Subtotal</Text>
+                  <Text style={styles.totalValue}>{formatCurrency(totalPrice)}</Text>
+                </View>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Service Fee</Text>
+                  <Text style={styles.totalValue}>{formatCurrency(0)}</Text>
+                </View>
+                <View style={[styles.totalRow, styles.grandTotalRow]}>
+                  <Text style={styles.grandTotalLabel}>Total Amount</Text>
+                  <Text style={styles.grandTotalValue}>{formatCurrency(totalPrice)}</Text>
+                </View>
               </View>
+            </ScrollView>
+
+            <View style={styles.footer}>
+              <TouchableOpacity style={styles.submitBtn} onPress={handleSubmitOrder}>
+                <Text style={styles.submitBtnText}>Send to Kitchen</Text>
+                <Text style={styles.submitArrow}>→</Text>
+              </TouchableOpacity>
             </View>
-          );
-        })}
-
-        <View style={styles.finalTotalContainer}>
-          <View style={styles.totalRow}>
-             <Text style={styles.totalLabel}>Subtotal</Text>
-             <Text style={styles.totalValue}>{formatCurrency(totalPrice)}</Text>
-          </View>
-          <View style={styles.totalRow}>
-             <Text style={styles.totalLabel}>Service Fee</Text>
-             <Text style={styles.totalValue}>{formatCurrency(0)}</Text>
-          </View>
-          <View style={[styles.totalRow, { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: t.border }]}>
-             <Text style={[styles.totalLabel, { color: t.text, fontSize: 18, fontWeight: '900' }]}>Total Amount</Text>
-             <Text style={[styles.totalValue, { color: t.accent, fontSize: 24, fontWeight: '900' }]}>{formatCurrency(totalPrice)}</Text>
-          </View>
-        </View>
-      </ScrollView>
-
-      {/* Floating Action Bar */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={[styles.submitBtn, { backgroundColor: t.accent }]} onPress={handleSubmitOrder}>
-          <Text style={[styles.submitBtnText, { color: '#121212' }]}>Send to Kitchen</Text>
-          <View style={[styles.submitBtnIcon, { backgroundColor: 'rgba(18,18,18,0.1)' }]}>
-             <Text style={{ color: '#121212', fontSize: 18 }}>→</Text>
-          </View>
-        </TouchableOpacity>
+          </>
+        )}
       </View>
     </SafeAreaView>
   );
 }
 
+function BasketIcon() {
+  return (
+    <View style={styles.basketIcon}>
+      <View style={styles.basketHandle} />
+      <View style={styles.basketBody} />
+      <View style={styles.basketLineOne} />
+      <View style={styles.basketLineTwo} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FAFAF9',
-  },
-  header: {
-    backgroundColor: '#FFF',
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backArrow: {
-    fontSize: 20,
-    color: '#111827',
-  },
-  headerTitleContainer: {
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#111827',
-    fontStyle: 'italic',
-    letterSpacing: -0.5,
-  },
-
-  headerSubtitle: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-  },
-  tableBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 24,
-  },
-  tableIconCircle: {
-    width: 65,
-    height: 65,
-    borderRadius: 33,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tableIconText: {
-    color: '#FFF',
-    fontSize: 28,
-    fontWeight: '900',
-  },
-  tableBannerTitle: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#111827',
-  },
-  tableBannerSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  chefTicket: {
-    backgroundColor: '#FFF',
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 25,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  ticketHeader: {
-    backgroundColor: '#FAFAF9',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth:1,
-    borderBottomColor: '#F3F4F6'
-  },
-  ticketTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#374151',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  ticketCount: {
-    backgroundColor: '#E5E7EB',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  ticketCountText: {
-    fontSize: 12,
-    fontWeight: '900',
-    color: '#374151',
-  },
-  ticketBody: {
-    paddingHorizontal: 20,
-  },
-  summaryItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F9FAFB',
-  },
-  itemInfo: {
-    flex: 1,
-  },
-  itemQty: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: '#059669',
-    marginRight: 8,
-  },
-  itemName: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#111827',
-  },
-  itemVariant: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginTop: 2,
-    fontWeight: '500',
-  },
-  itemRight: {
-    alignItems: 'flex-end',
-  },
-  itemPrice: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#111827',
-  },
-  removeBtn: {
-    marginTop: 8,
-  },
-  removeText: {
-    fontSize: 12,
-    color: '#EF4444',
-    fontWeight: '700',
-  },
-  finalTotalContainer: {
-    padding: 30,
-  },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  totalLabel: {
-    fontSize: 15,
-    color: '#6B7280',
-    fontWeight: '600',
-  },
-  totalValue: {
-    fontSize: 16,
-    color: '#111827',
-    fontWeight: '700',
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 30,
-    left: 20,
-    right: 20,
-  },
-  submitBtn: {
-    backgroundColor: '#059669',
-    height: 65,
-    borderRadius: 35,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 15,
-    elevation: 8,
-  },
-  submitBtnText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  submitBtnIcon: {
-     marginLeft: 15,
-     width: 30,
-     height: 30,
-     borderRadius: 15,
-     backgroundColor: 'rgba(255,255,255,0.2)',
-     alignItems: 'center',
-     justifyContent: 'center',
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
-  },
-  emptyIconCircle: {
-     width: 120,
-     height: 120,
-     borderRadius: 60,
-     backgroundColor: '#F3F4F6',
-     alignItems: 'center',
-     justifyContent: 'center',
-     marginBottom: 30,
-  },
-  emptyEmoji: {
-    fontSize: 60,
-  },
-  emptyText: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#111827',
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    fontSize: 15,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginTop: 8,
-    fontWeight: '500',
-  },
-  goBackBtn: {
-    marginTop: 40,
-    backgroundColor: '#111827',
-    paddingHorizontal: 30,
-    paddingVertical: 18,
-    borderRadius: 35,
-  },
-  goBackText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '800',
-  },
+  screen: { flex: 1, backgroundColor: PAPER },
+  frame: { flex: 1, overflow: 'hidden', backgroundColor: PAPER, borderWidth: 1.4, borderColor: INK },
+  heroBlock: { height: 92, backgroundColor: TEA_BROWN, borderBottomWidth: 1.2, borderColor: INK, justifyContent: 'center', paddingHorizontal: 72 },
+  backButton: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 54, borderRightWidth: 1.2, borderColor: 'rgba(247, 233, 207, 0.45)', alignItems: 'center', justifyContent: 'center' },
+  backText: { color: PAPER, fontSize: 32, lineHeight: 34 },
+  heroTitle: { color: PAPER, fontSize: 24, fontWeight: '900', letterSpacing: 1 },
+  heroSubtitle: { marginTop: 5, color: 'rgba(247, 233, 207, 0.72)', fontSize: 11, fontWeight: '800' },
+  content: { flex: 1 },
+  contentBody: { padding: 20, paddingBottom: 118 },
+  tableBanner: { flexDirection: 'row', alignItems: 'center', padding: 14, borderWidth: 1.2, borderColor: INK, backgroundColor: PAPER, marginBottom: 16 },
+  tableBadge: { width: 44, height: 44, borderWidth: 1.2, borderColor: INK, backgroundColor: ORANGE, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
+  tableBadgeText: { color: INK, fontSize: 18, fontWeight: '900' },
+  tableTitle: { color: INK, fontSize: 18, fontWeight: '900', letterSpacing: 0.6 },
+  tableSubtitle: { marginTop: 3, color: INK, opacity: 0.58, fontSize: 11, fontWeight: '800' },
+  ticket: { borderWidth: 1.2, borderColor: INK, backgroundColor: '#FFF2D8', marginBottom: 16 },
+  ticketHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, borderBottomWidth: 1.1, borderColor: INK, backgroundColor: PAPER },
+  ticketTitle: { color: INK, fontSize: 13, fontWeight: '900', letterSpacing: 0.8, textTransform: 'uppercase' },
+  ticketCount: { color: INK, fontSize: 12, fontWeight: '900' },
+  summaryItem: { flexDirection: 'row', justifyContent: 'space-between', padding: 14, borderBottomWidth: 1, borderColor: 'rgba(23, 18, 13, 0.3)' },
+  lastSummaryItem: { borderBottomWidth: 0 },
+  itemInfo: { flex: 1, paddingRight: 12 },
+  itemName: { color: INK, fontSize: 15, fontWeight: '900' },
+  itemVariant: { marginTop: 3, color: INK, opacity: 0.58, fontSize: 11, fontWeight: '800' },
+  itemRight: { alignItems: 'flex-end' },
+  itemPrice: { color: INK, fontSize: 15, fontWeight: '900' },
+  removeText: { marginTop: 8, color: ORANGE, fontSize: 11, fontWeight: '900' },
+  totalCard: { borderWidth: 1.2, borderColor: INK, padding: 16, backgroundColor: PAPER },
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 9 },
+  totalLabel: { color: INK, opacity: 0.68, fontSize: 13, fontWeight: '800' },
+  totalValue: { color: INK, fontSize: 14, fontWeight: '900' },
+  grandTotalRow: { marginTop: 8, marginBottom: 0, paddingTop: 12, borderTopWidth: 1.1, borderColor: INK },
+  grandTotalLabel: { color: INK, fontSize: 17, fontWeight: '900' },
+  grandTotalValue: { color: TEA_BROWN, fontSize: 22, fontWeight: '900' },
+  footer: { position: 'absolute', left: 20, right: 20, bottom: 24 },
+  submitBtn: { height: 58, backgroundColor: TEA_BROWN, borderWidth: 1.2, borderColor: INK, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  submitBtnText: { color: PAPER, fontSize: 16, fontWeight: '900', letterSpacing: 0.4 },
+  submitArrow: { marginLeft: 14, color: PAPER, fontSize: 22, fontWeight: '900' },
+  emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36 },
+  basketIcon: { width: 118, height: 94, marginBottom: 30 },
+  basketHandle: { position: 'absolute', top: 6, left: 33, width: 52, height: 38, borderWidth: 2, borderBottomWidth: 0, borderColor: TEA_BROWN, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
+  basketBody: { position: 'absolute', left: 18, right: 18, bottom: 10, height: 48, borderWidth: 2, borderColor: TEA_BROWN, borderBottomLeftRadius: 18, borderBottomRightRadius: 18 },
+  basketLineOne: { position: 'absolute', left: 26, right: 26, bottom: 42, height: 2, backgroundColor: TEA_BROWN },
+  basketLineTwo: { position: 'absolute', left: 30, right: 30, bottom: 28, height: 2, backgroundColor: TEA_BROWN, opacity: 0.7 },
+  emptyText: { color: INK, fontSize: 24, fontWeight: '900', textAlign: 'center' },
+  emptySubtitle: { marginTop: 8, color: INK, opacity: 0.62, fontSize: 14, fontWeight: '800', textAlign: 'center' },
+  goBackBtn: { marginTop: 34, paddingHorizontal: 28, paddingVertical: 16, backgroundColor: TEA_BROWN, borderWidth: 1.2, borderColor: INK },
+  goBackText: { color: PAPER, fontSize: 15, fontWeight: '900' },
 });
-

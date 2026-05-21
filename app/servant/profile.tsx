@@ -177,7 +177,7 @@ export default function ServantProfile() {
                 <OptionRow label="Notification" />
                 <OptionRow label="Reset password" />
                 <OptionRow label="Dashboard" onPress={() => setProfileView('dashboard')} />
-                <OptionRow label="App settings" />
+                <OptionRow label="App settings" onPress={() => router.push('/settings')} />
                 <OptionRow label="Logout" onPress={handleLogout} />
               </View>
             </>

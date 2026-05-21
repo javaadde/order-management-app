@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  RefreshControl,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,11 +13,23 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Platform } from 'react-native';
 
 import { useCafeFlowStore } from '../../src/store/cafeFlow';
-import { OrderItemCard, NavBar } from '../../src/components/UIComponents';
-import { CHEF_INFO, MENU_ITEMS } from '../../src/constants/menu';
+import { CHEF_INFO } from '../../src/constants/menu';
 import { ChefRole, ItemStatus } from '../../src/types';
-import { formatTime } from '../../src/utils/helpers';
-import { COLORS } from '../../src/constants/theme';
+
+const PAPER = '#F7E9CF';
+const TEA_BROWN = '#4B2B1A';
+const INK = '#17120D';
+const ORANGE = '#F26B2A';
+const TABLE_NAMES: Record<number, string> = {
+  1: 'bc',
+  2: 'tc',
+  3: 'cntr',
+  4: 'lc',
+  5: 'mj(majlis)',
+  6: 'dw-r',
+  7: 'dw-l',
+  8: 'dw-c',
+};
 
 /**
  * Chef Panel - Dynamic route for each chef (chef_a, chef_b, chef_c)
@@ -31,12 +42,9 @@ export default function ChefPanel() {
     updateItemStatus,
     getOrdersForChef,
     setRole,
-    theme,
   } = useCafeFlowStore();
 
-  const t = COLORS[theme];
   const [activeTab, setActiveTab] = React.useState<'pending' | 'preparing' | 'ready'>('pending');
-  const [refreshing, setRefreshing] = React.useState(false);
 
   const chefRole = (role as ChefRole) || 'chef_a';
   const chefInfo = CHEF_INFO[chefRole];
@@ -71,11 +79,6 @@ export default function ChefPanel() {
     [updateItemStatus]
   );
 
-  const handleRefresh = useCallback(() => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
-
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout from the kitchen?', [
       { text: 'Cancel', style: 'cancel' },
@@ -95,187 +98,113 @@ export default function ChefPanel() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: t.background }]}>
-      {/* Texture Overlay */}
-      <View style={styles.textureOverlay} pointerEvents="none">
-        {[...Array(30)].map((_, i) => (
-          <View
-            key={`dot-${i}`}
-            style={[
-              styles.textureDot,
-              {
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                opacity: 0.1,
-                backgroundColor: t.text,
-              },
-            ]}
-          />
-        ))}
-      </View>
+    <SafeAreaView style={styles.chefPaperScreen}>
+      <View style={styles.chefPaperFrame}>
+        <View style={styles.chefHeroBlock}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Open chef profile"
+            onPress={() => router.push({ pathname: '/chef/profile', params: { role: chefRole } })}
+            style={styles.chefProfileButton}
+          >
+            <View style={styles.chefProfileHead} />
+            <View style={styles.chefProfileBody} />
+          </TouchableOpacity>
+          <Text style={styles.chefHeroTitle}>Kitchen</Text>
+          <Text style={styles.chefHeroSubtitle}>{chefInfo.specialty} · kitchen board</Text>
+        </View>
 
-      <NavBar 
-        title={chefInfo.name} 
-        subtitle={chefInfo.specialty} 
-        onLogout={handleLogout} 
-      />
-
-      {/* Modern Kitchen Tabs */}
-      <View style={[styles.tabWrapper, { backgroundColor: t.card }]}>
-        <View style={[styles.tabNavigation, { backgroundColor: t.surface }]}>
+        <View style={styles.chefTabs}> 
           {(['pending', 'preparing', 'ready'] as const).map((tab) => {
             const isActive = activeTab === tab;
             const count = ordersForChef.flatMap(o => o.items).filter(i => i.status === tab).length;
-            const tabColor = tab === 'pending' ? '#EF4444' : tab === 'preparing' ? '#F59E0B' : t.accent;
+            const label = tab === 'pending' ? 'Orders' : tab === 'preparing' ? 'Making' : 'Ready';
             
             return (
               <TouchableOpacity
                 key={tab}
                 onPress={() => setActiveTab(tab)}
-                style={[styles.tab, isActive && [styles.activeTab, { backgroundColor: theme === 'dark' ? t.accent : '#FFF' }]]}
+                style={[styles.chefTab, isActive && styles.activeChefTab]}
               >
-                <Text style={[styles.tabText, isActive && { color: theme === 'dark' ? '#121212' : t.text }, !isActive && { color: t.muted }]}>
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </Text>
-                {count > 0 && (
-                  <View style={[styles.tabBadge, { backgroundColor: isActive ? (theme === 'dark' ? '#121212' : tabColor) : t.border }]}>
-                    <Text style={[styles.tabBadgeText, { color: isActive ? (theme === 'dark' ? t.accent : '#FFF') : t.muted }]}>{count}</Text>
-                  </View>
-                )}
+                <Text style={[styles.chefTabText, isActive && styles.activeChefTabText]}>{label}</Text>
+                <Text style={[styles.chefTabCount, isActive && styles.activeChefTabCount]}>{count}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
-      </View>
 
-      {/* Kitchen Content */}
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={{ paddingBottom: 120 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-      >
-        {filteredOrders.length === 0 ? (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIconContainer}>
-               <Text style={styles.emptyEmoji}>👨‍🍳</Text>
+        <ScrollView style={styles.chefBoardScroll} contentContainerStyle={styles.chefBoardContent}>
+          {filteredOrders.length === 0 ? (
+            <View style={styles.chefEmptyPanel}>
+              <Text style={styles.chefEmptyTitle}>
+                {activeTab === 'pending' ? 'No new orders' : activeTab === 'preparing' ? 'Nothing making' : 'Ready shelf empty'}
+              </Text>
+              <Text style={styles.chefEmptyHint}>Tickets will appear here as servants send orders.</Text>
             </View>
-            <Text style={styles.emptyStateText}>
-              {activeTab === 'pending'
-                ? 'All Caught Up!'
-                : activeTab === 'preparing'
-                  ? 'No Active Prep'
-                  : 'Ready Station Empty'}
-            </Text>
-            <Text style={styles.emptyStateHint}>
-              New kitchen tickets will appear here automatically
-            </Text>
-          </View>
-        ) : (
-          filteredOrders.map((order) => (
-            <View key={order.id} style={[styles.orderGroup, { backgroundColor: t.card, borderColor: t.border }]}>
-              {/* Modern Ticket Header */}
-              <View style={[styles.ticketHeader, { backgroundColor: t.surface, borderBottomColor: t.border }]}>
-                <View style={[styles.tableIndicator, { backgroundColor: activeTab === 'pending' ? '#EF4444' : activeTab === 'preparing' ? '#F59E0B' : t.accent }]}>
-                  <Text style={[styles.tableIndicatorText, { color: (activeTab === 'ready' && theme === 'dark') ? '#121212' : '#FFF' }]}>{order.tableNumber}</Text>
+          ) : (
+            filteredOrders.map((order) => (
+              <View key={order.id} style={styles.chefTicketCard}>
+                <View style={styles.chefTicketHeader}>
+                  <View style={styles.chefTableBadge}>
+                    <Text style={styles.chefTableBadgeText}>{TABLE_NAMES[order.tableNumber] ?? order.tableNumber}</Text>
+                  </View>
+                  <View style={styles.chefTicketTitleWrap}>
+                    <Text style={styles.chefTicketTitle}>Ticket #{order.id.slice(-4).toUpperCase()}</Text>
+                    <Text style={styles.chefTicketSubtitle}>{order.items.length} items</Text>
+                  </View>
                 </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={[styles.ticketTitle, { color: t.text }]}>Ticket #{order.id.slice(-4).toUpperCase()}</Text>
-                  <Text style={[styles.ticketTime, { color: t.muted }]}>Received: {formatTime(order.createdAt)}</Text>
-                </View>
-                <View style={[styles.ticketBadge, { backgroundColor: t.border }]}>
-                  <Text style={[styles.ticketBadgeText, { color: t.text }]}>{order.items.length} items</Text>
-                </View>
-              </View>
 
-              {/* Items List */}
-              <View style={styles.itemsList}>
-                {order.items.map((item) => (
+                {order.items.map((item, index) => (
                   <TouchableOpacity
                     key={item.id}
+                    activeOpacity={activeTab !== 'ready' ? 0.78 : 1}
                     onPress={() => {
-                      const nextStatus: ItemStatus =
-                        item.status === 'pending'
-                          ? 'preparing'
-                          : item.status === 'preparing'
-                            ? 'ready'
-                            : 'ready';
-
+                      const nextStatus: ItemStatus = item.status === 'pending' ? 'preparing' : item.status === 'preparing' ? 'ready' : 'ready';
                       handleStatusChange(order.id, item.id, nextStatus);
                     }}
-                    activeOpacity={activeTab !== 'ready' ? 0.7 : 1}
-                    style={styles.itemWrapper}
+                    style={[styles.chefItemRow, index === order.items.length - 1 && styles.lastChefItemRow]}
                   >
-                    <OrderItemCard
-                      itemName={item.menuItemName}
-                      variantName={item.variantName}
-                      quantity={item.quantity}
-                      price={item.totalPrice}
-                      status={item.status}
-                      image={MENU_ITEMS.find(m => m.id === item.menuItemId)?.image}
-                    />
+                    <View style={styles.chefItemInfo}>
+                      <Text style={styles.chefItemName}>{item.quantity}x {item.menuItemName}</Text>
+                      <Text style={styles.chefItemVariant}>{item.variantName}</Text>
+                    </View>
+                    {activeTab !== 'ready' ? <Text style={styles.chefItemAction}>{activeTab === 'pending' ? 'Start' : 'Ready'}</Text> : null}
                   </TouchableOpacity>
                 ))}
-              </View>
 
-              {/* Action Bar for Ticket */}
-              <View style={styles.ticketFooter}>
-                {activeTab === 'pending' && (
-                  <TouchableOpacity 
-                    style={[styles.actionBtnPrimary, { backgroundColor: theme === 'dark' ? t.accent : '#059669' }]}
+                {activeTab !== 'ready' ? (
+                  <TouchableOpacity
+                    style={styles.chefTicketButton}
                     onPress={() => {
                       order.items.forEach((item) => {
-                        handleStatusChange(order.id, item.id, 'preparing');
+                        handleStatusChange(order.id, item.id, activeTab === 'pending' ? 'preparing' : 'ready');
                       });
                     }}
                   >
-                    <Text style={[styles.actionBtnText, { color: theme === 'dark' ? '#121212' : '#ffffff' }]}>Accept All Items</Text>
+                    <Text style={styles.chefTicketButtonText}>{activeTab === 'pending' ? 'Start All Items' : 'Move All To Ready'}</Text>
                   </TouchableOpacity>
-                )}
-
-                {activeTab === 'preparing' && (
-                  <TouchableOpacity 
-                    style={[styles.actionBtnSuccess, { backgroundColor: theme === 'dark' ? t.accent : '#10B981' }]}
-                    onPress={() => {
-                      order.items.forEach((item) => {
-                        handleStatusChange(order.id, item.id, 'ready');
-                      });
-                    }}
-                  >
-                    <Text style={[styles.actionBtnText, { color: theme === 'dark' ? '#121212' : '#ffffff' }]}>Mark All as Ready</Text>
-                  </TouchableOpacity>
-                )}
+                ) : null}
               </View>
-            </View>
-          ))
-        )}
-      </ScrollView>
+            ))
+          )}
+        </ScrollView>
 
-      {/* Floating Kitchen Stats */}
-      <View style={styles.statsBarWrapper}>
-         <View style={[styles.statsBar, { backgroundColor: t.accent }]}>
-          <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: '#121212' }]}>
-              {ordersForChef.flatMap((o) => o.items).filter((i) => i.status === 'pending').length}
-            </Text>
-            <Text style={[styles.statLabel, { color: 'rgba(18, 18, 18, 0.6)' }]}>Pending</Text>
-          </View>
-          <View style={[styles.statDivider, { backgroundColor: 'rgba(18, 18, 18, 0.1)' }]} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: '#121212' }]}>
-              {ordersForChef.flatMap((o) => o.items).filter((i) => i.status === 'preparing').length}
-            </Text>
-            <Text style={[styles.statLabel, { color: 'rgba(18, 18, 18, 0.6)' }]}>Active</Text>
-          </View>
-          <View style={[styles.statDivider, { backgroundColor: 'rgba(18, 18, 18, 0.1)' }]} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: '#121212' }]}>
-              {ordersForChef.flatMap((o) => o.items).filter((i) => i.status === 'ready').length}
-            </Text>
-            <Text style={[styles.statLabel, { color: 'rgba(18, 18, 18, 0.6)' }]}>Ready</Text>
-          </View>
+        <View style={styles.chefStatsBar}>
+          <StatCell label="Orders" value={ordersForChef.flatMap((o) => o.items).filter((i) => i.status === 'pending').length} />
+          <StatCell label="Making" value={ordersForChef.flatMap((o) => o.items).filter((i) => i.status === 'preparing').length} />
+          <StatCell label="Ready" value={ordersForChef.flatMap((o) => o.items).filter((i) => i.status === 'ready').length} />
         </View>
       </View>
     </SafeAreaView>
+  );
+}
+
+function StatCell({ label, value }: { label: string; value: number }) {
+  return (
+    <View style={styles.chefStatCell}>
+      <Text style={styles.chefStatValue}>{value}</Text>
+      <Text style={styles.chefStatLabel}>{label}</Text>
+    </View>
   );
 }
 
@@ -440,6 +369,262 @@ function TeaStatusColumn({
 }
 
 const styles = StyleSheet.create({
+  chefPaperScreen: {
+    flex: 1,
+    backgroundColor: PAPER,
+  },
+  chefPaperFrame: {
+    flex: 1,
+    backgroundColor: PAPER,
+    borderWidth: 1.4,
+    borderColor: INK,
+    overflow: 'hidden',
+  },
+  chefHeroBlock: {
+    height: 108,
+    backgroundColor: TEA_BROWN,
+    borderBottomWidth: 1.2,
+    borderColor: INK,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  chefHeroTitle: {
+    color: PAPER,
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  chefHeroSubtitle: {
+    marginTop: 5,
+    color: 'rgba(247, 233, 207, 0.72)',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  chefProfileButton: {
+    position: 'absolute',
+    right: 14,
+    top: 14,
+    width: 38,
+    height: 36,
+    borderWidth: 1.2,
+    borderColor: 'rgba(247, 233, 207, 0.8)',
+    backgroundColor: 'rgba(247, 233, 207, 0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chefProfileHead: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.6,
+    borderColor: PAPER,
+  },
+  chefProfileBody: {
+    width: 21,
+    height: 11,
+    marginTop: 3,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    borderWidth: 1.6,
+    borderBottomWidth: 0,
+    borderColor: PAPER,
+  },
+  chefTabs: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    marginBottom: -1.2,
+    zIndex: 2,
+  },
+  chefTab: {
+    minWidth: 94,
+    height: 44,
+    marginRight: 6,
+    borderWidth: 1.2,
+    borderBottomWidth: 0,
+    borderColor: INK,
+    borderTopLeftRadius: 9,
+    borderTopRightRadius: 9,
+    backgroundColor: '#F1DFC0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeChefTab: {
+    height: 52,
+    backgroundColor: TEA_BROWN,
+  },
+  chefTabText: {
+    color: INK,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.7,
+  },
+  activeChefTabText: {
+    color: PAPER,
+  },
+  chefTabCount: {
+    marginTop: 2,
+    color: INK,
+    fontSize: 9,
+    fontWeight: '900',
+    opacity: 0.58,
+  },
+  activeChefTabCount: {
+    color: PAPER,
+  },
+  chefBoardScroll: {
+    flex: 1,
+  },
+  chefBoardContent: {
+    paddingHorizontal: 20,
+    paddingTop: 1,
+    paddingBottom: 100,
+  },
+  chefEmptyPanel: {
+    minHeight: 180,
+    borderWidth: 1.2,
+    borderColor: INK,
+    backgroundColor: PAPER,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  chefEmptyTitle: {
+    color: INK,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  chefEmptyHint: {
+    marginTop: 8,
+    color: INK,
+    fontSize: 11,
+    fontWeight: '800',
+    opacity: 0.56,
+    textAlign: 'center',
+  },
+  chefTicketCard: {
+    borderWidth: 1.2,
+    borderColor: INK,
+    backgroundColor: '#FFF2D8',
+    marginBottom: 14,
+  },
+  chefTicketHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderBottomWidth: 1.1,
+    borderColor: INK,
+    backgroundColor: PAPER,
+  },
+  chefTableBadge: {
+    minWidth: 44,
+    height: 40,
+    borderWidth: 1.1,
+    borderColor: INK,
+    backgroundColor: ORANGE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  chefTableBadgeText: {
+    color: INK,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  chefTicketTitleWrap: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  chefTicketTitle: {
+    color: INK,
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+  chefTicketSubtitle: {
+    marginTop: 2,
+    color: INK,
+    fontSize: 10,
+    fontWeight: '800',
+    opacity: 0.58,
+  },
+  chefItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(23, 18, 13, 0.3)',
+  },
+  lastChefItemRow: {
+    borderBottomWidth: 0,
+  },
+  chefItemInfo: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  chefItemName: {
+    color: INK,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  chefItemVariant: {
+    marginTop: 3,
+    color: INK,
+    fontSize: 11,
+    fontWeight: '800',
+    opacity: 0.58,
+  },
+  chefItemAction: {
+    color: TEA_BROWN,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  chefTicketButton: {
+    minHeight: 42,
+    margin: 14,
+    borderWidth: 1.1,
+    borderColor: INK,
+    backgroundColor: TEA_BROWN,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chefTicketButtonText: {
+    color: PAPER,
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0.4,
+  },
+  chefStatsBar: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    bottom: 18,
+    minHeight: 58,
+    borderWidth: 1.2,
+    borderColor: INK,
+    backgroundColor: TEA_BROWN,
+    flexDirection: 'row',
+  },
+  chefStatCell: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRightWidth: 1,
+    borderColor: 'rgba(247, 233, 207, 0.34)',
+  },
+  chefStatValue: {
+    color: PAPER,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  chefStatLabel: {
+    marginTop: 2,
+    color: 'rgba(247, 233, 207, 0.68)',
+    fontSize: 10,
+    fontWeight: '900',
+  },
   teaMakerScreen: {
     flex: 1,
     backgroundColor: '#F7E9CF',

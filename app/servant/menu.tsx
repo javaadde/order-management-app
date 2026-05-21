@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -21,7 +21,6 @@ import {
 } from '../../src/constants/menu';
 import { MenuItem } from '../../src/types';
 import { formatCurrency } from '../../src/utils/helpers';
-import { COLORS } from '../../src/constants/theme';
 
 const PAPER = '#F7E9CF';
 const TEA_BROWN = '#4B2B1A';
@@ -32,6 +31,21 @@ const DRINK_SECTIONS = [
   { title: 'Mojito', prefix: 'mojito_' },
   { title: 'Soda', prefix: 'soda_' },
 ];
+const TEA_SECTIONS = [
+  { title: 'Black Tea', prefix: 'black_tea' },
+  { title: 'Milk Tea', prefix: 'milk_tea' },
+  { title: 'Healthy Tea', prefix: 'healthy_tea' },
+];
+const TABLE_NAMES: Record<number, string> = {
+  1: 'bc',
+  2: 'tc',
+  3: 'cntr',
+  4: 'lc',
+  5: 'mj(majlis)',
+  6: 'dw-r',
+  7: 'dw-l',
+  8: 'dw-c',
+};
 
 interface VariantModalState {
   visible: boolean;
@@ -45,10 +59,10 @@ interface VariantModalState {
  */
 export default function MenuScreen() {
   const router = useRouter();
-  const { addItemToCart, tempCartItems, currentTableNumber, theme } = useCafeFlowStore();
+  const { addItemToCart, tempCartItems, currentTableNumber } = useCafeFlowStore();
+  const itemsScrollRef = useRef<ScrollView>(null);
+  const menuSectionPositions = useRef<Record<string, number>>({});
   
-  const t = COLORS[theme];
-
   const [selectedCategory, setSelectedCategory] = useState<string>('tea');
   const [variantModal, setVariantModal] = useState<VariantModalState>({
     visible: false,
@@ -58,10 +72,23 @@ export default function MenuScreen() {
   });
   
   const categoryItems = getMenuItemsByCategory(selectedCategory);
+  const tableLabel = currentTableNumber ? `Table (${TABLE_NAMES[currentTableNumber] ?? currentTableNumber})` : 'Select a table';
   const drinkSections = DRINK_SECTIONS.map((section) => ({
     ...section,
     items: categoryItems.filter((item) => item.id.startsWith(section.prefix)),
   })).filter((section) => section.items.length > 0);
+  const teaSections = TEA_SECTIONS.map((section) => ({
+    ...section,
+    items: categoryItems.filter((item) => item.id.startsWith(section.prefix)),
+  })).filter((section) => section.items.length > 0);
+  const currentSubSections = selectedCategory === 'tea' ? teaSections : selectedCategory === 'cold_drinks' ? drinkSections : [];
+
+  const jumpToMenuSection = (title: string) => {
+    itemsScrollRef.current?.scrollTo({
+      y: Math.max((menuSectionPositions.current[title] ?? 0) - 8, 0),
+      animated: true,
+    });
+  };
 
   const handleSelectItem = (menuItem: MenuItem) => {
     const firstVariant = menuItem.variants[0];
@@ -100,23 +127,17 @@ export default function MenuScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.frame}>
-        <View style={styles.topBar}>
-          <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/servant')} style={styles.backButton}>
-            <Text style={styles.backText}>‹</Text>
-          </TouchableOpacity>
+        <View style={styles.heroBlock}>
           <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/servant/order-summary')} style={styles.cartIconBtn}>
-            <Text style={styles.cartIconText}>C</Text>
+            <CartIcon />
             {tempCartItems.length > 0 && (
               <View style={styles.cartBadge}>
                 <Text style={styles.cartBadgeText}>{tempCartItems.length}</Text>
               </View>
             )}
           </TouchableOpacity>
-        </View>
-
-        <View style={styles.heroBlock}>
           <Text style={styles.heroTitle}>Menu</Text>
-          <Text style={styles.heroSubtitle}>{currentTableNumber ? `Table ${currentTableNumber}` : 'Select a table'} · choose items</Text>
+          <Text style={styles.heroSubtitle}>{tableLabel} · choose items</Text>
         </View>
 
         <View style={styles.categoryWrapper}>
@@ -143,16 +164,45 @@ export default function MenuScreen() {
           </ScrollView>
         </View>
 
-        <ScrollView style={styles.itemsScroll} contentContainerStyle={styles.itemsScrollContent}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{MENU_CATEGORIES.find((c) => c.id === selectedCategory)?.label || 'Menu'}</Text>
-            <Text style={styles.sectionSubtitle}>Hand-picked favorites</Text>
+        <ScrollView
+          ref={itemsScrollRef}
+          style={styles.itemsScroll}
+          contentContainerStyle={styles.itemsScrollContent}
+          stickyHeaderIndices={[0]}
+        >
+          <View style={styles.stickyMenuHeader}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{MENU_CATEGORIES.find((c) => c.id === selectedCategory)?.label || 'Menu'}</Text>
+              <Text style={styles.sectionSubtitle}>Hand-picked favorites</Text>
+            </View>
+
+            {currentSubSections.length > 0 ? (
+              <View style={styles.drinkJumpBar}>
+                {currentSubSections.map((section) => (
+                  <TouchableOpacity
+                    key={section.title}
+                    accessibilityRole="button"
+                    activeOpacity={0.78}
+                    onPress={() => jumpToMenuSection(section.title)}
+                    style={styles.drinkJumpButton}
+                  >
+                    <Text style={styles.drinkJumpText}>{section.title}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
           </View>
 
           <View style={styles.itemsContainer}>
-            {selectedCategory === 'cold_drinks'
-              ? drinkSections.map((section) => (
-                  <View key={section.title} style={styles.drinkSection}>
+            {currentSubSections.length > 0
+              ? currentSubSections.map((section) => (
+                  <View
+                    key={section.title}
+                    style={styles.drinkSection}
+                    onLayout={(event) => {
+                      menuSectionPositions.current[section.title] = event.nativeEvent.layout.y;
+                    }}
+                  >
                     <Text style={styles.drinkSectionTitle}>{section.title}</Text>
                     {section.items.map((item) => (
                       <MenuItemRow key={item.id} item={item} onPress={() => handleSelectItem(item)} />
@@ -194,15 +244,15 @@ export default function MenuScreen() {
             style={{ flex: 1 }} 
             onPress={() => setVariantModal({ ...variantModal, visible: false })} 
           />
-          <View style={[styles.modalContent, { backgroundColor: t.card }]}>
+          <View style={styles.modalContent}>
             {variantModal.menuItem && (
               <>
-                <View style={[styles.modalIndicator, { backgroundColor: t.border }]} />
+                <View style={styles.modalIndicator} />
                 <View style={styles.modalHeader}>
                   <View style={styles.modalHeaderGrid}>
                     <View style={styles.modalTextInfo}>
-                      <Text style={[styles.modalTitle, { color: t.text }]}>{variantModal.menuItem.name}</Text>
-                      <Text style={[styles.modalSubtitle, { color: t.muted }]}>Customize your selection</Text>
+                      <Text style={styles.modalTitle}>{variantModal.menuItem.name}</Text>
+                      <Text style={styles.modalSubtitle}>Choose quantity</Text>
                     </View>
                     {variantModal.menuItem.image && (
                       <Image 
@@ -215,56 +265,65 @@ export default function MenuScreen() {
                 </View>
 
                 <ScrollView style={styles.modalBody}>
-                  <Text style={[styles.optionLabel, { color: t.text }]}>Size / Type</Text>
-                  <View style={styles.variantGrid}>
-                    {variantModal.menuItem.variants.map((variant) => {
-                      const isSelected = variantModal.selectedVariantId === variant.id;
-                      return (
-                        <TouchableOpacity
-                          key={variant.id}
-                          onPress={() => setVariantModal({ ...variantModal, selectedVariantId: variant.id })}
-                          style={[
-                            styles.variantChip, 
-                            { backgroundColor: t.surface, borderColor: t.border },
-                            isSelected && [styles.activeVariantChip, { borderColor: t.accent, backgroundColor: theme === 'dark' ? 'rgba(197, 164, 126, 0.1)' : '#ECFDF5' }]
-                          ]}
-                        >
-                          <Text style={[styles.variantChipText, { color: t.text }, isSelected && [styles.activeVariantChipText, { color: t.accent }]]}>
-                            {variant.name}
-                          </Text>
-                          <Text style={[styles.variantPriceModifier, { color: t.muted }, isSelected && [styles.activeVariantPriceText, { color: t.accent }]]}>
-                            {variant.priceModifier >= 0 ? '+' : ''}{variant.priceModifier}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
+                  {variantModal.menuItem.category !== 'tea' && variantModal.menuItem.variants.length > 1 ? (
+                    <>
+                      <Text style={styles.optionLabel}>Type</Text>
+                      <View style={styles.variantGrid}>
+                        {variantModal.menuItem.variants.map((variant) => {
+                          const isSelected = variantModal.selectedVariantId === variant.id;
+                          return (
+                            <TouchableOpacity
+                              key={variant.id}
+                              onPress={() => setVariantModal({ ...variantModal, selectedVariantId: variant.id })}
+                              style={[styles.variantChip, isSelected && styles.activeVariantChip]}
+                            >
+                              <Text style={[styles.variantChipText, isSelected && styles.activeVariantChipText]}>
+                                {variant.name}
+                              </Text>
+                              <Text style={[styles.variantPriceModifier, isSelected && styles.activeVariantPriceText]}>
+                                {variant.priceModifier >= 0 ? '+' : ''}{variant.priceModifier}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </>
+                  ) : null}
 
-                  <Text style={[styles.optionLabel, { marginTop: 30, color: t.text }]}>Quantity</Text>
+                  <Text
+                    style={[
+                      styles.optionLabel,
+                      variantModal.menuItem.category !== 'tea' &&
+                        variantModal.menuItem.variants.length > 1 &&
+                        styles.spacedOptionLabel,
+                    ]}
+                  >
+                    Quantity
+                  </Text>
                   <View style={styles.qtyContainer}>
                     <TouchableOpacity
                       onPress={() => setVariantModal({ ...variantModal, quantity: Math.max(1, variantModal.quantity - 1) })}
-                      style={[styles.qtyBtn, { backgroundColor: t.surface }]}
+                      style={styles.qtyBtn}
                     >
-                      <Text style={[styles.qtyBtnText, { color: t.text }]}>−</Text>
+                      <Text style={styles.qtyBtnText}>−</Text>
                     </TouchableOpacity>
-                    <Text style={[styles.qtyValue, { color: t.text }]}>{variantModal.quantity}</Text>
+                    <Text style={styles.qtyValue}>{variantModal.quantity}</Text>
                     <TouchableOpacity
                       onPress={() => setVariantModal({ ...variantModal, quantity: variantModal.quantity + 1 })}
-                      style={[styles.qtyBtn, { backgroundColor: t.surface }]}
+                      style={styles.qtyBtn}
                     >
-                      <Text style={[styles.qtyBtnText, { color: t.text }]}>+</Text>
+                      <Text style={styles.qtyBtnText}>+</Text>
                     </TouchableOpacity>
                   </View>
                 </ScrollView>
 
-                <View style={[styles.modalFooter, { borderTopColor: t.border }]}>
+                <View style={styles.modalFooter}>
                   <View style={styles.finalPriceContainer}>
-                    <Text style={[styles.finalPriceLabel, { color: t.muted }]}>Total Amount</Text>
-                    <Text style={[styles.finalPriceValue, { color: t.text }]}>{formatCurrency(getTotalPrice())}</Text>
+                    <Text style={styles.finalPriceLabel}>Total Amount</Text>
+                    <Text style={styles.finalPriceValue}>{formatCurrency(getTotalPrice())}</Text>
                   </View>
-                  <TouchableOpacity style={[styles.confirmBtn, { backgroundColor: t.accent }]} onPress={handleAddToCart}>
-                    <Text style={[styles.confirmBtnText, { color: '#121212' }]}>Add to Cart</Text>
+                  <TouchableOpacity style={styles.confirmBtn} onPress={handleAddToCart}>
+                    <Text style={styles.confirmBtnText}>Add to Cart</Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -300,6 +359,17 @@ function MenuItemRow({ item, onPress }: { item: MenuItem; onPress: () => void })
   );
 }
 
+function CartIcon() {
+  return (
+    <View style={styles.drawnCart}>
+      <View style={styles.cartHandle} />
+      <View style={styles.cartBasket} />
+      <View style={styles.cartWheelLeft} />
+      <View style={styles.cartWheelRight} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -311,13 +381,6 @@ const styles = StyleSheet.create({
     backgroundColor: PAPER,
     borderWidth: 1.4,
     borderColor: INK,
-  },
-  topBar: {
-    height: 78,
-    borderBottomWidth: 1.2,
-    borderColor: INK,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   backButton: {
     position: 'absolute',
@@ -331,12 +394,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backText: {
-    color: INK,
+    color: PAPER,
     fontSize: 32,
     lineHeight: 34,
   },
   heroBlock: {
-    height: 118,
+    height: 82,
     backgroundColor: TEA_BROWN,
     borderBottomWidth: 1.2,
     borderColor: INK,
@@ -362,8 +425,8 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderWidth: 1.2,
-    borderColor: INK,
-    backgroundColor: PAPER,
+    borderColor: 'rgba(247, 233, 207, 0.8)',
+    backgroundColor: 'rgba(247, 233, 207, 0.16)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -427,6 +490,10 @@ const styles = StyleSheet.create({
   itemsScrollContent: {
     paddingBottom: 150,
   },
+  stickyMenuHeader: {
+    backgroundColor: PAPER,
+    paddingBottom: 10,
+  },
   sectionHeader: {
     marginHorizontal: 24,
     padding: 14,
@@ -446,6 +513,27 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     opacity: 0.55,
+  },
+  drinkJumpBar: {
+    marginHorizontal: 24,
+    marginTop: 10,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  drinkJumpButton: {
+    flex: 1,
+    minHeight: 38,
+    borderWidth: 1.1,
+    borderColor: INK,
+    backgroundColor: TEA_BROWN,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  drinkJumpText: {
+    color: PAPER,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.6,
   },
   itemsContainer: {
     paddingHorizontal: 24,
@@ -571,24 +659,26 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(23, 18, 13, 0.58)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 35,
-    borderTopRightRadius: 35,
-    paddingTop: 15,
-    paddingBottom: 40,
+    backgroundColor: PAPER,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderWidth: 1.4,
+    borderColor: INK,
+    paddingTop: 12,
+    paddingBottom: 26,
     maxHeight: '85%',
   },
   modalIndicator: {
-    width: 40,
-    height: 5,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 3,
+    width: 54,
+    height: 3,
+    backgroundColor: TEA_BROWN,
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 18,
+    opacity: 0.75,
   },
   modalHeaderGrid: {
     flexDirection: 'row',
@@ -603,6 +693,47 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '900',
   },
+  drawnCart: {
+    width: 24,
+    height: 22,
+  },
+  cartHandle: {
+    position: 'absolute',
+    top: 3,
+    left: 1,
+    width: 7,
+    height: 2,
+    backgroundColor: PAPER,
+    transform: [{ rotate: '18deg' }],
+  },
+  cartBasket: {
+    position: 'absolute',
+    top: 7,
+    left: 5,
+    width: 16,
+    height: 9,
+    borderWidth: 1.8,
+    borderColor: PAPER,
+    borderTopWidth: 2,
+  },
+  cartWheelLeft: {
+    position: 'absolute',
+    bottom: 1,
+    left: 7,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: PAPER,
+  },
+  cartWheelRight: {
+    position: 'absolute',
+    right: 3,
+    bottom: 1,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: PAPER,
+  },
   modalTextInfo: {
     flex: 1,
     paddingRight: 10,
@@ -610,18 +741,21 @@ const styles = StyleSheet.create({
   modalItemImage: {
     width: 70,
     height: 70,
-    borderRadius: 15,
+    borderWidth: 1.1,
+    borderColor: INK,
   },
   modalTitle: {
-    fontSize: 24,
+    fontSize: 23,
     fontWeight: '900',
-    color: '#111827',
+    color: INK,
+    letterSpacing: 0.2,
   },
   modalSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
+    fontSize: 12,
+    color: INK,
+    fontWeight: '800',
     marginTop: 4,
+    opacity: 0.58,
   },
   modalBody: {
     paddingHorizontal: 30,
@@ -629,10 +763,13 @@ const styles = StyleSheet.create({
   optionLabel: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#111827',
+    color: INK,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 15,
+  },
+  spacedOptionLabel: {
+    marginTop: 30,
   },
   variantGrid: {
     flexDirection: 'row',
@@ -642,32 +779,31 @@ const styles = StyleSheet.create({
   variantChip: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: '#F3F4F6',
-    backgroundColor: '#FAFAF9',
+    borderWidth: 1.2,
+    borderColor: INK,
+    backgroundColor: PAPER,
     minWidth: '45%',
   },
   activeVariantChip: {
-    borderColor: '#059669',
-    backgroundColor: '#ECFDF5',
+    borderColor: INK,
+    backgroundColor: TEA_BROWN,
   },
   variantChipText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#374151',
+    color: INK,
   },
   activeVariantChipText: {
-    color: '#065F46',
+    color: PAPER,
   },
   variantPriceModifier: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: INK,
     marginTop: 2,
     fontWeight: '600'
   },
   activeVariantPriceText: {
-    color: '#059669'
+    color: PAPER,
   },
   qtyContainer: {
     flexDirection: 'row',
@@ -676,20 +812,21 @@ const styles = StyleSheet.create({
   qtyBtn: {
     width: 50,
     height: 50,
-    borderRadius: 25,
-    backgroundColor: '#F3F4F6',
+    borderWidth: 1.2,
+    borderColor: INK,
+    backgroundColor: PAPER,
     alignItems: 'center',
     justifyContent: 'center',
   },
   qtyBtnText: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#111827',
+    color: INK,
   },
   qtyValue: {
     fontSize: 24,
     fontWeight: '900',
-    color: '#111827',
+    color: INK,
     marginHorizontal: 30,
   },
   modalFooter: {
@@ -697,7 +834,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: INK,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -707,22 +844,24 @@ const styles = StyleSheet.create({
   },
   finalPriceLabel: {
     fontSize: 13,
-    color: '#6B7280',
-    fontWeight: '600',
+    color: INK,
+    fontWeight: '800',
+    opacity: 0.62,
   },
   finalPriceValue: {
     fontSize: 24,
     fontWeight: '900',
-    color: '#111827',
+    color: INK,
   },
   confirmBtn: {
-    backgroundColor: '#059669',
+    backgroundColor: TEA_BROWN,
     paddingHorizontal: 30,
     paddingVertical: 18,
-    borderRadius: 30,
+    borderWidth: 1.2,
+    borderColor: INK,
   },
   confirmBtnText: {
-    color: '#FFF',
+    color: PAPER,
     fontSize: 16,
     fontWeight: '800',
   },
